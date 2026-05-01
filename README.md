@@ -24,33 +24,53 @@
 - [AI SDK](https://ai-sdk.dev/docs/introduction)
   - Unified API for generating text, structured objects, and tool calls with LLMs
   - Hooks for building dynamic chat and generative user interfaces
-  - Supports OpenAI, Anthropic, Google, xAI, and other model providers via AI Gateway
+  - Supports OpenAI-compatible model providers via the AI SDK
 - [shadcn/ui](https://ui.shadcn.com)
   - Styling with [Tailwind CSS](https://tailwindcss.com)
   - Component primitives from [Radix UI](https://radix-ui.com) for accessibility and flexibility
 - Data Persistence
   - [Neon Serverless Postgres](https://vercel.com/marketplace/neon) for saving chat history and user data
-  - [Vercel Blob](https://vercel.com/storage/blob) for efficient file storage
+  - [SeaweedFS](https://github.com/seaweedfs/seaweedfs) for self-hosted object storage
 - [Auth.js](https://authjs.dev)
   - Simple and secure authentication
 
 ## Model Providers
 
-This template uses the [Vercel AI Gateway](https://vercel.com/docs/ai-gateway) to access multiple AI models through a unified interface. Models are configured in `lib/ai/models.ts` with per-model provider routing. Included models: Mistral, Moonshot, DeepSeek, OpenAI, and xAI.
+This template uses the [`@ai-sdk/openai-compatible`](https://ai-sdk.dev/providers/openai-compatible-providers) provider so you can connect any service that exposes an OpenAI-compatible API. Configure the base URL, API key, and model IDs in `.env.local`, and the app will use those models throughout the chat UI and server routes.
 
-### AI Gateway Authentication
+### OpenAI Compatible Configuration
 
-**For Vercel deployments**: Authentication is handled automatically via OIDC tokens.
+Set `OPENAI_COMPATIBLE_BASE_URL` and `OPENAI_COMPATIBLE_API_KEY` in your `.env.local` file.
 
-**For non-Vercel deployments**: You need to provide an AI Gateway API key by setting the `AI_GATEWAY_API_KEY` environment variable in your `.env.local` file.
+If you want to control which models appear in the UI, set `OPENAI_COMPATIBLE_MODEL_IDS` as a comma-separated list and choose the default with `OPENAI_COMPATIBLE_DEFAULT_MODEL`.
 
-With the [AI SDK](https://ai-sdk.dev/docs/introduction), you can also switch to direct LLM providers like [OpenAI](https://openai.com), [Anthropic](https://anthropic.com), [Cohere](https://cohere.com/), and [many more](https://ai-sdk.dev/providers/ai-sdk-providers) with just a few lines of code.
+If your endpoint has per-model capability differences, set `OPENAI_COMPATIBLE_MODEL_CAPABILITIES` to a JSON object keyed by model ID.
+
+## File Storage
+
+This project stores uploaded chat images in SeaweedFS via its S3-compatible API. The upload route keeps the existing `url`, `pathname`, and `contentType` response shape, so attachments continue to render directly in chat messages.
+
+### SeaweedFS Configuration
+
+Set these variables in `.env.local`:
+
+- `SEAWEEDFS_S3_ENDPOINT`
+- `SEAWEEDFS_S3_REGION`
+- `SEAWEEDFS_S3_ACCESS_KEY`
+- `SEAWEEDFS_S3_SECRET_KEY`
+- `SEAWEEDFS_S3_BUCKET`
+- `SEAWEEDFS_PUBLIC_BASE_URL`
+- Optional `SEAWEEDFS_S3_FORCE_PATH_STYLE`
+
+`SEAWEEDFS_PUBLIC_BASE_URL` should point to the filer path that exposes buckets publicly. With the included Docker setup, that value is `http://127.0.0.1:8888/buckets`.
 
 ## Deploy Your Own
 
 You can deploy your own version of Chatbot to Vercel with one click:
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/templates/next.js/chatbot)
+
+For self-hosted Docker deployment with SeaweedFS, Redis, and PostgreSQL, see [docs/deployment.md](docs/deployment.md).
 
 ## Running locally
 
@@ -61,6 +81,12 @@ You will need to use the environment variables [defined in `.env.example`](.env.
 1. Install Vercel CLI: `npm i -g vercel`
 2. Link local instance with Vercel and GitHub accounts (creates `.vercel` directory): `vercel link`
 3. Download your environment variables: `vercel env pull`
+4. Start SeaweedFS locally:
+
+```bash
+docker compose -f docker-compose.seaweedfs.yml up -d
+pnpm storage:init
+```
 
 ```bash
 pnpm install

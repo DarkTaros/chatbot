@@ -1,8 +1,7 @@
-import { put } from "@vercel/blob";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-
 import { auth } from "@/app/(auth)/auth";
+import { uploadPublicImage } from "@/lib/storage/seaweedfs";
 
 const FileSchema = z.object({
   file: z
@@ -45,17 +44,24 @@ export async function POST(request: Request) {
     }
 
     const filename = (formData.get("file") as File).name;
-    const safeName = filename.replace(/[^a-zA-Z0-9._-]/g, "_");
     const fileBuffer = await file.arrayBuffer();
 
     try {
-      const data = await put(`${safeName}`, fileBuffer, {
-        access: "public",
+      const data = await uploadPublicImage({
+        filename,
+        body: fileBuffer,
+        contentType: file.type,
       });
 
       return NextResponse.json(data);
-    } catch (_error) {
-      return NextResponse.json({ error: "Upload failed" }, { status: 500 });
+    } catch (error) {
+      const message =
+        error instanceof Error &&
+        error.message.startsWith("Missing required environment variable:")
+          ? "SeaweedFS storage is not configured correctly"
+          : "Upload failed";
+
+      return NextResponse.json({ error: message }, { status: 500 });
     }
   } catch (_error) {
     return NextResponse.json(
