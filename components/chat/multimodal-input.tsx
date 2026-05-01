@@ -7,7 +7,6 @@ import {
   ArrowUpIcon,
   BrainIcon,
   EyeIcon,
-  LockIcon,
   WrenchIcon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -23,11 +22,11 @@ import {
   useState,
 } from "react";
 import { toast } from "sonner";
-import useSWR from "swr";
 import { useLocalStorage, useWindowSize } from "usehooks-ts";
 import {
   ModelSelector,
   ModelSelectorContent,
+  ModelSelectorEmpty,
   ModelSelectorGroup,
   ModelSelectorInput,
   ModelSelectorItem,
@@ -36,12 +35,8 @@ import {
   ModelSelectorName,
   ModelSelectorTrigger,
 } from "@/components/ai-elements/model-selector";
-import {
-  type ChatModel,
-  chatModels,
-  DEFAULT_CHAT_MODEL,
-  type ModelCapabilities,
-} from "@/lib/ai/models";
+import type { ChatModel } from "@/lib/ai/models";
+import { useModelConfig } from "@/hooks/use-model-config";
 import type { Attachment, ChatMessage } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import {
@@ -593,15 +588,17 @@ function PureAttachmentsButton({
   status: UseChatHelpers<ChatMessage>["status"];
   selectedModelId: string;
 }) {
-  const { data: modelsResponse } = useSWR(
-    `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/models`,
-    (url: string) => fetch(url).then((r) => r.json()),
-    { revalidateOnFocus: false, dedupingInterval: 3_600_000 }
-  );
-
-  const caps: Record<string, ModelCapabilities> | undefined =
-    modelsResponse?.capabilities ?? modelsResponse;
-  const hasVision = caps?.[selectedModelId]?.vision ?? false;
+  const { allowedModelIds, defaultModelId, getCapabilities } = useModelConfig();
+  const resolvedModelId = allowedModelIds.has(selectedModelId)
+    ? selectedModelId
+    : defaultModelId;
+  const hasVision = getCapabilities(resolvedModelId).vision;
+  const isGenerating = status === "submitted" || status === "streaming";
+  const buttonTitle = hasVision
+    ? isGenerating
+      ? "Wait for the current response to finish"
+      : "Attach an image"
+    : "Current model does not support image attachments";
 
   return (
     <Button
@@ -612,11 +609,12 @@ function PureAttachmentsButton({
           : "text-muted-foreground/30 cursor-not-allowed"
       )}
       data-testid="attachments-button"
-      disabled={status !== "ready" || !hasVision}
+      disabled={isGenerating || !hasVision}
       onClick={(event) => {
         event.preventDefault();
         fileInputRef.current?.click();
       }}
+      title={buttonTitle}
       variant="ghost"
     >
       <PaperclipIcon size={14} style={{ width: 14, height: 14 }} />
@@ -634,22 +632,14 @@ function PureModelSelectorCompact({
   onModelChange?: (modelId: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const { data: modelsData } = useSWR(
-    `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/models`,
-    (url: string) => fetch(url).then((r) => r.json()),
-    { revalidateOnFocus: false, dedupingInterval: 3_600_000 }
-  );
-
-  const capabilities: Record<string, ModelCapabilities> | undefined =
-    modelsData?.capabilities ?? modelsData;
-  const dynamicModels: ChatModel[] | undefined = modelsData?.models;
-  const activeModels = dynamicModels ?? chatModels;
+  const { capabilities, defaultModelId, models: activeModels } =
+    useModelConfig();
 
   const selectedModel =
     activeModels.find((m: ChatModel) => m.id === selectedModelId) ??
-    activeModels.find((m: ChatModel) => m.id === DEFAULT_CHAT_MODEL) ??
+    activeModels.find((m: ChatModel) => m.id === defaultModelId) ??
     activeModels[0];
-  const [provider] = selectedModel.id.split("/");
+  const [provider] = selectedModel?.id.split("/") ?? [];
 
   return (
     <ModelSelector onOpenChange={setOpen} open={open}>
@@ -660,129 +650,61 @@ function PureModelSelectorCompact({
           variant="ghost"
         >
           {provider && <ModelSelectorLogo provider={provider} />}
-          <ModelSelectorName>{selectedModel.name}</ModelSelectorName>
+          <ModelSelectorName>
+            {selectedModel?.name ?? selectedModelId ?? "Loading..."}
+          </ModelSelectorName>
         </Button>
       </ModelSelectorTrigger>
       <ModelSelectorContent>
         <ModelSelectorInput placeholder="Search models..." />
         <ModelSelectorList>
-          {(() => {
-            const curatedIds = new Set(chatModels.map((m) => m.id));
-            const allModels = dynamicModels
-              ? [
-                  ...chatModels,
-                  ...dynamicModels.filter((m) => !curatedIds.has(m.id)),
-                ]
-              : chatModels;
+          {activeModels.length === 0 ? (
+            <ModelSelectorEmpty>No models found.</ModelSelectorEmpty>
+          ) : (
+            <ModelSelectorGroup heading="Available">
+              {activeModels.map((model) => {
+                const logoProvider = model.id.split("/")[0];
 
-            const grouped: Record<
-              string,
-              { model: ChatModel; curated: boolean }[]
-            > = {};
-            for (const model of allModels) {
-              const key = curatedIds.has(model.id)
-                ? "_available"
-                : model.provider;
-              if (!grouped[key]) {
-                grouped[key] = [];
-              }
-              grouped[key].push({ model, curated: curatedIds.has(model.id) });
-            }
-
-            const sortedKeys = Object.keys(grouped).sort((a, b) => {
-              if (a === "_available") {
-                return -1;
-              }
-              if (b === "_available") {
-                return 1;
-              }
-              return a.localeCompare(b);
-            });
-
-            const providerNames: Record<string, string> = {
-              alibaba: "Alibaba",
-              anthropic: "Anthropic",
-              "arcee-ai": "Arcee AI",
-              bytedance: "ByteDance",
-              cohere: "Cohere",
-              deepseek: "DeepSeek",
-              google: "Google",
-              inception: "Inception",
-              kwaipilot: "Kwaipilot",
-              meituan: "Meituan",
-              meta: "Meta",
-              minimax: "MiniMax",
-              mistral: "Mistral",
-              moonshotai: "Moonshot",
-              morph: "Morph",
-              nvidia: "Nvidia",
-              openai: "OpenAI",
-              perplexity: "Perplexity",
-              "prime-intellect": "Prime Intellect",
-              xiaomi: "Xiaomi",
-              xai: "xAI",
-              zai: "Zai",
-            };
-
-            return sortedKeys.map((key) => (
-              <ModelSelectorGroup
-                heading={
-                  key === "_available"
-                    ? "Available"
-                    : (providerNames[key] ?? key)
-                }
-                key={key}
-              >
-                {grouped[key].map(({ model, curated }) => {
-                  const logoProvider = model.id.split("/")[0];
-                  return (
-                    <ModelSelectorItem
-                      className={cn(
-                        "flex w-full",
-                        model.id === selectedModel.id &&
-                          "border-b border-dashed border-foreground/50",
-                        !curated && "opacity-40 cursor-default"
+                return (
+                  <ModelSelectorItem
+                    className={cn(
+                      "flex w-full",
+                      model.id === selectedModel?.id &&
+                        "border-b border-dashed border-foreground/50"
+                    )}
+                    key={model.id}
+                    onSelect={() => {
+                      onModelChange?.(model.id);
+                      setCookie("chat-model", model.id);
+                      setOpen(false);
+                      setTimeout(() => {
+                        document
+                          .querySelector<HTMLTextAreaElement>(
+                            "[data-testid='multimodal-input']"
+                          )
+                          ?.focus();
+                      }, 50);
+                    }}
+                    value={model.id}
+                  >
+                    <ModelSelectorLogo provider={logoProvider} />
+                    <ModelSelectorName>{model.name}</ModelSelectorName>
+                    <div className="ml-auto flex items-center gap-2 text-foreground/70">
+                      {capabilities?.[model.id]?.tools && (
+                        <WrenchIcon className="size-3.5" />
                       )}
-                      key={model.id}
-                      onSelect={() => {
-                        if (!curated) {
-                          return;
-                        }
-                        onModelChange?.(model.id);
-                        setCookie("chat-model", model.id);
-                        setOpen(false);
-                        setTimeout(() => {
-                          document
-                            .querySelector<HTMLTextAreaElement>(
-                              "[data-testid='multimodal-input']"
-                            )
-                            ?.focus();
-                        }, 50);
-                      }}
-                      value={model.id}
-                    >
-                      <ModelSelectorLogo provider={logoProvider} />
-                      <ModelSelectorName>{model.name}</ModelSelectorName>
-                      <div className="ml-auto flex items-center gap-2 text-foreground/70">
-                        {capabilities?.[model.id]?.tools && (
-                          <WrenchIcon className="size-3.5" />
-                        )}
-                        {capabilities?.[model.id]?.vision && (
-                          <EyeIcon className="size-3.5" />
-                        )}
-                        {capabilities?.[model.id]?.reasoning && (
-                          <BrainIcon className="size-3.5" />
-                        )}
-                        {!curated && (
-                          <LockIcon className="size-3 text-muted-foreground/50" />
-                        )}
-                      </div>
-                    </ModelSelectorItem>
-                  );
-                })}
-              </ModelSelectorGroup>
-            ));
-          })()}
+                      {capabilities?.[model.id]?.vision && (
+                        <EyeIcon className="size-3.5" />
+                      )}
+                      {capabilities?.[model.id]?.reasoning && (
+                        <BrainIcon className="size-3.5" />
+                      )}
+                    </div>
+                  </ModelSelectorItem>
+                );
+              })}
+            </ModelSelectorGroup>
+          )}
         </ModelSelectorList>
       </ModelSelectorContent>
     </ModelSelector>

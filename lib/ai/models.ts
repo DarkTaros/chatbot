@@ -29,7 +29,9 @@ function inferProvider(modelId: string) {
 }
 
 function formatModelName(modelId: string) {
-  return modelId.includes("/") ? modelId.split("/").slice(1).join("/") : modelId;
+  return modelId.includes("/")
+    ? modelId.split("/").slice(1).join("/")
+    : modelId;
 }
 
 function parseModelCapabilities() {
@@ -62,7 +64,7 @@ function parseModelCapabilities() {
 
 const configuredCapabilities = parseModelCapabilities();
 
-function getModelCapabilities(modelId: string): ModelCapabilities {
+export function getModelCapabilities(modelId: string): ModelCapabilities {
   return configuredCapabilities[modelId] ?? defaultCapabilities;
 }
 
@@ -103,9 +105,7 @@ export const titleModel = {
   description: "Model used for title generation",
 };
 
-export async function getCapabilities(): Promise<
-  Record<string, ModelCapabilities>
-> {
+export function getCapabilities(): Record<string, ModelCapabilities> {
   return Object.fromEntries(
     chatModels.map((model) => [model.id, getModelCapabilities(model.id)])
   );

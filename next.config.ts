@@ -9,10 +9,10 @@ const remotePatterns: NonNullable<NextConfig["images"]>["remotePatterns"] = [
   },
 ];
 
-const seaweedFsPublicBaseUrl = process.env.SEAWEEDFS_PUBLIC_BASE_URL?.trim();
+const rustFsPublicBaseUrl = process.env.RUSTFS_PUBLIC_BASE_URL?.trim();
 
-if (seaweedFsPublicBaseUrl) {
-  const url = new URL(seaweedFsPublicBaseUrl);
+if (rustFsPublicBaseUrl) {
+  const url = new URL(rustFsPublicBaseUrl);
   const pathname =
     url.pathname === "/" ? "/**" : `${url.pathname.replace(/\/$/, "")}/**`;
 

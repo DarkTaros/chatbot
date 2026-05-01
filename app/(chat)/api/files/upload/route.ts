@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/app/(auth)/auth";
-import { uploadPublicImage } from "@/lib/storage/seaweedfs";
+import { uploadPublicImage } from "@/lib/storage/rustfs";
 
 const FileSchema = z.object({
   file: z
@@ -13,6 +13,62 @@ const FileSchema = z.object({
       message: "File type should be JPEG or PNG",
     }),
 });
+
+function getUploadErrorDetails(error: unknown) {
+  if (
+    error instanceof Error &&
+    error.message.startsWith("Missing required environment variable:")
+  ) {
+    return {
+      message: "RustFS storage is not configured correctly",
+      status: 500,
+    };
+  }
+
+  const candidates = [
+    error,
+    error instanceof Error ? error.cause : undefined,
+  ].filter(Boolean) as Array<
+    Partial<Error> & {
+      code?: string;
+      name?: string;
+      $metadata?: { httpStatusCode?: number };
+    }
+  >;
+
+  if (
+    candidates.some(
+      (candidate) =>
+        candidate.code === "ECONNREFUSED" ||
+        candidate.code === "ENOTFOUND" ||
+        candidate.code === "EHOSTUNREACH"
+    )
+  ) {
+    return {
+      message: "RustFS storage is unavailable. Start RustFS and try again.",
+      status: 503,
+    };
+  }
+
+  if (
+    candidates.some(
+      (candidate) =>
+        candidate.name === "NoSuchBucket" ||
+        candidate.$metadata?.httpStatusCode === 404
+    )
+  ) {
+    return {
+      message:
+        "RustFS bucket is missing. Run `pnpm storage:init` and try again.",
+      status: 500,
+    };
+  }
+
+  return {
+    message: "Upload failed",
+    status: 500,
+  };
+}
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -55,13 +111,11 @@ export async function POST(request: Request) {
 
       return NextResponse.json(data);
     } catch (error) {
-      const message =
-        error instanceof Error &&
-        error.message.startsWith("Missing required environment variable:")
-          ? "SeaweedFS storage is not configured correctly"
-          : "Upload failed";
+      console.error("Image upload failed:", error);
 
-      return NextResponse.json({ error: message }, { status: 500 });
+      const { message, status } = getUploadErrorDetails(error);
+
+      return NextResponse.json({ error: message }, { status });
     }
   } catch (_error) {
     return NextResponse.json(

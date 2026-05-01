@@ -1,6 +1,7 @@
 import {
   CreateBucketCommand,
   HeadBucketCommand,
+  PutBucketPolicyCommand,
   PutObjectCommand,
   S3Client,
   S3ServiceException,
@@ -18,7 +19,7 @@ export type UploadedImage = {
   contentType: string;
 };
 
-type SeaweedFsConfig = {
+type RustFsConfig = {
   endpoint: string;
   region: string;
   accessKeyId: string;
@@ -26,6 +27,7 @@ type SeaweedFsConfig = {
   bucket: string;
   publicBaseUrl: string;
   forcePathStyle: boolean;
+  publicReadPolicyEnabled: boolean;
 };
 
 let cachedClient: S3Client | undefined;
@@ -49,26 +51,44 @@ function getPublicBaseUrl(value: string) {
   return trimTrailingSlash(url.toString());
 }
 
-export function getSeaweedFsConfig(): SeaweedFsConfig {
+function isEnvDisabled(name: string) {
+  return process.env[name]?.trim().toLowerCase() === "false";
+}
+
+function buildPublicReadPolicy(bucket: string) {
+  return JSON.stringify({
+    Version: "2012-10-17",
+    Statement: [
+      {
+        Sid: "PublicReadGetObject",
+        Effect: "Allow",
+        Principal: "*",
+        Action: ["s3:GetObject"],
+        Resource: [`arn:aws:s3:::${bucket}/*`],
+      },
+    ],
+  });
+}
+
+export function getRustFsConfig(): RustFsConfig {
   return {
-    endpoint: trimTrailingSlash(getRequiredEnv("SEAWEEDFS_S3_ENDPOINT")),
-    region: process.env.SEAWEEDFS_S3_REGION?.trim() || "us-east-1",
-    accessKeyId: getRequiredEnv("SEAWEEDFS_S3_ACCESS_KEY"),
-    secretAccessKey: getRequiredEnv("SEAWEEDFS_S3_SECRET_KEY"),
-    bucket: getRequiredEnv("SEAWEEDFS_S3_BUCKET"),
-    publicBaseUrl: getPublicBaseUrl(
-      getRequiredEnv("SEAWEEDFS_PUBLIC_BASE_URL")
-    ),
-    forcePathStyle: process.env.SEAWEEDFS_S3_FORCE_PATH_STYLE !== "false",
+    endpoint: trimTrailingSlash(getRequiredEnv("RUSTFS_S3_ENDPOINT")),
+    region: process.env.RUSTFS_S3_REGION?.trim() || "us-east-1",
+    accessKeyId: getRequiredEnv("RUSTFS_S3_ACCESS_KEY"),
+    secretAccessKey: getRequiredEnv("RUSTFS_S3_SECRET_KEY"),
+    bucket: getRequiredEnv("RUSTFS_S3_BUCKET"),
+    publicBaseUrl: getPublicBaseUrl(getRequiredEnv("RUSTFS_PUBLIC_BASE_URL")),
+    forcePathStyle: !isEnvDisabled("RUSTFS_S3_FORCE_PATH_STYLE"),
+    publicReadPolicyEnabled: !isEnvDisabled("RUSTFS_S3_PUBLIC_READ_POLICY"),
   };
 }
 
-export function getSeaweedFsClient() {
+export function getRustFsClient() {
   if (cachedClient) {
     return cachedClient;
   }
 
-  const config = getSeaweedFsConfig();
+  const config = getRustFsConfig();
 
   cachedClient = new S3Client({
     endpoint: config.endpoint,
@@ -103,10 +123,10 @@ function buildPublicUrl(bucket: string, key: string, baseUrl: string) {
 export async function uploadPublicImage(
   input: PublicImageUpload
 ): Promise<UploadedImage> {
-  const config = getSeaweedFsConfig();
+  const config = getRustFsConfig();
   const key = buildObjectKey(input.filename);
 
-  await getSeaweedFsClient().send(
+  await getRustFsClient().send(
     new PutObjectCommand({
       Bucket: config.bucket,
       Key: key,
@@ -122,22 +142,31 @@ export async function uploadPublicImage(
   };
 }
 
-export async function ensureSeaweedFsBucket() {
-  const config = getSeaweedFsConfig();
-  const client = getSeaweedFsClient();
+export async function ensureRustFsBucket() {
+  const config = getRustFsConfig();
+  const client = getRustFsClient();
 
   try {
     await client.send(new HeadBucketCommand({ Bucket: config.bucket }));
-    return;
   } catch (error) {
     if (
       error instanceof S3ServiceException &&
       (error.name === "NotFound" || error.$metadata.httpStatusCode === 404)
     ) {
       await client.send(new CreateBucketCommand({ Bucket: config.bucket }));
-      return;
+    } else {
+      throw error;
     }
-
-    throw error;
   }
+
+  if (!config.publicReadPolicyEnabled) {
+    return;
+  }
+
+  await client.send(
+    new PutBucketPolicyCommand({
+      Bucket: config.bucket,
+      Policy: buildPublicReadPolicy(config.bucket),
+    })
+  );
 }

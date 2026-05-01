@@ -30,7 +30,7 @@
   - Component primitives from [Radix UI](https://radix-ui.com) for accessibility and flexibility
 - Data Persistence
   - [Neon Serverless Postgres](https://vercel.com/marketplace/neon) for saving chat history and user data
-  - [SeaweedFS](https://github.com/seaweedfs/seaweedfs) for self-hosted object storage
+  - [RustFS](https://github.com/rustfs/rustfs) for self-hosted object storage
 - [Auth.js](https://authjs.dev)
   - Simple and secure authentication
 
@@ -48,21 +48,22 @@ If your endpoint has per-model capability differences, set `OPENAI_COMPATIBLE_MO
 
 ## File Storage
 
-This project stores uploaded chat images in SeaweedFS via its S3-compatible API. The upload route keeps the existing `url`, `pathname`, and `contentType` response shape, so attachments continue to render directly in chat messages.
+This project stores uploaded chat images in RustFS via its S3-compatible API. The upload route keeps the existing `url`, `pathname`, and `contentType` response shape, so attachments continue to render directly in chat messages.
 
-### SeaweedFS Configuration
+### RustFS Configuration
 
 Set these variables in `.env.local`:
 
-- `SEAWEEDFS_S3_ENDPOINT`
-- `SEAWEEDFS_S3_REGION`
-- `SEAWEEDFS_S3_ACCESS_KEY`
-- `SEAWEEDFS_S3_SECRET_KEY`
-- `SEAWEEDFS_S3_BUCKET`
-- `SEAWEEDFS_PUBLIC_BASE_URL`
-- Optional `SEAWEEDFS_S3_FORCE_PATH_STYLE`
+- `RUSTFS_S3_ENDPOINT`
+- `RUSTFS_S3_REGION`
+- `RUSTFS_S3_ACCESS_KEY`
+- `RUSTFS_S3_SECRET_KEY`
+- `RUSTFS_S3_BUCKET`
+- `RUSTFS_PUBLIC_BASE_URL`
+- Optional `RUSTFS_S3_FORCE_PATH_STYLE`
+- Optional `RUSTFS_S3_PUBLIC_READ_POLICY`
 
-`SEAWEEDFS_PUBLIC_BASE_URL` should point to the filer path that exposes buckets publicly. With the included Docker setup, that value is `http://127.0.0.1:8888/buckets`.
+`RUSTFS_PUBLIC_BASE_URL` should point to a browser-reachable path-style RustFS endpoint. With the included Docker setup, that value is `http://127.0.0.1:9000`.
 
 ## Deploy Your Own
 
@@ -70,7 +71,7 @@ You can deploy your own version of Chatbot to Vercel with one click:
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/templates/next.js/chatbot)
 
-For self-hosted Docker deployment with SeaweedFS, Redis, and PostgreSQL, see [docs/deployment.md](docs/deployment.md).
+For self-hosted Docker deployment with RustFS, Redis, and PostgreSQL, see [docs/deployment.md](docs/deployment.md).
 
 ## Running locally
 
@@ -81,10 +82,10 @@ You will need to use the environment variables [defined in `.env.example`](.env.
 1. Install Vercel CLI: `npm i -g vercel`
 2. Link local instance with Vercel and GitHub accounts (creates `.vercel` directory): `vercel link`
 3. Download your environment variables: `vercel env pull`
-4. Start SeaweedFS locally:
+4. Start RustFS locally:
 
 ```bash
-docker compose -f docker-compose.seaweedfs.yml up -d
+docker compose -f docker-compose.rustfs.yml up -d
 pnpm storage:init
 ```
 

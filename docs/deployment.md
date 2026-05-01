@@ -4,7 +4,7 @@
 
 - PostgreSQL
 - Redis
-- SeaweedFS
+- RustFS
 - 应用自身启动
 
 默认假设：
@@ -12,7 +12,7 @@
 - 服务器系统为 Linux
 - 已安装 Docker 与 Docker Compose Plugin
 - 项目目录为 `/opt/chatbot`
-- 应用、PostgreSQL、Redis、SeaweedFS 部署在同一台机器
+- 应用、PostgreSQL、Redis、RustFS 部署在同一台机器
 
 ## 1. 准备目录
 
@@ -97,28 +97,28 @@ REDIS_URL=redis://127.0.0.1:6379
 REDIS_URL=redis://chatbot-redis:6379
 ```
 
-## 4. 部署 SeaweedFS
+## 4. 部署 RustFS
 
-项目已经内置了 SeaweedFS 的最小单机部署文件：[docker-compose.seaweedfs.yml](/Volumes/T9/chatbot/docker-compose.seaweedfs.yml:1)。
+项目已经内置了 RustFS 的最小单机部署文件：[docker-compose.rustfs.yml](/Volumes/T9/chatbot/docker-compose.rustfs.yml:1)。
 
 先准备 S3 访问凭据：
 
 ```bash
-export SEAWEEDFS_S3_ACCESS_KEY=seaweedfs
-export SEAWEEDFS_S3_SECRET_KEY=change-this-seaweedfs-secret
+export RUSTFS_S3_ACCESS_KEY=rustfsadmin
+export RUSTFS_S3_SECRET_KEY=rustfssecret
 ```
 
-启动 SeaweedFS：
+启动 RustFS：
 
 ```bash
-docker compose -f docker-compose.seaweedfs.yml up -d
+docker compose -f docker-compose.rustfs.yml up -d
 ```
 
 检查状态：
 
 ```bash
-docker compose -f docker-compose.seaweedfs.yml ps
-docker compose -f docker-compose.seaweedfs.yml logs --tail 50
+docker compose -f docker-compose.rustfs.yml ps
+docker compose -f docker-compose.rustfs.yml logs --tail 50
 ```
 
 初始化 bucket：
@@ -128,36 +128,36 @@ pnpm install
 pnpm storage:init
 ```
 
-SeaweedFS 默认会启动这些端口：
+RustFS 默认会启动这些端口：
 
-- `9333`：master
-- `8080`：volume
-- `8888`：filer
-- `8333`：S3 API
+- `9000`：S3 API
+- `9001`：管理控制台
 
 应用里对应的环境变量示例：
 
 ```bash
-SEAWEEDFS_S3_ENDPOINT=http://127.0.0.1:8333
-SEAWEEDFS_S3_REGION=us-east-1
-SEAWEEDFS_S3_ACCESS_KEY=seaweedfs
-SEAWEEDFS_S3_SECRET_KEY=change-this-seaweedfs-secret
-SEAWEEDFS_S3_BUCKET=chatbot-uploads
-SEAWEEDFS_PUBLIC_BASE_URL=http://127.0.0.1:8888/buckets
-SEAWEEDFS_S3_FORCE_PATH_STYLE=true
+RUSTFS_S3_ENDPOINT=http://127.0.0.1:9000
+RUSTFS_S3_REGION=us-east-1
+RUSTFS_S3_ACCESS_KEY=rustfsadmin
+RUSTFS_S3_SECRET_KEY=change-this-rustfs-secret
+RUSTFS_S3_BUCKET=chatbot-uploads
+RUSTFS_PUBLIC_BASE_URL=http://127.0.0.1:9000
+RUSTFS_S3_FORCE_PATH_STYLE=true
+RUSTFS_S3_PUBLIC_READ_POLICY=true
 ```
 
 如果应用也运行在 Docker 容器中，并加入 `chatbot-net`，建议改为：
 
 ```bash
-SEAWEEDFS_S3_ENDPOINT=http://seaweedfs-s3:8333
-SEAWEEDFS_PUBLIC_BASE_URL=http://seaweedfs-filer:8888/buckets
+RUSTFS_S3_ENDPOINT=http://rustfs:9000
+RUSTFS_PUBLIC_BASE_URL=http://rustfs:9000
 ```
 
 注意：
 
-- `SEAWEEDFS_PUBLIC_BASE_URL` 必须指向 filer 暴露 bucket 文件的路径。
-- 如果你后面会接 Nginx 或 CDN，建议把它改成最终对外访问的域名，例如 `https://files.example.com/buckets`。
+- `RUSTFS_PUBLIC_BASE_URL` 必须指向浏览器可访问的 path-style 地址，上传后的图片会拼成 `/{bucket}/{key}`。
+- 初始化脚本默认会为 bucket 写入公共读策略，方便聊天图片直接渲染；如果你打算走私有桶或反向代理鉴权，可以把 `RUSTFS_S3_PUBLIC_READ_POLICY=false`。
+- 如果你后面会接 Nginx 或 CDN，建议把 `RUSTFS_PUBLIC_BASE_URL` 改成最终对外访问的域名，例如 `https://files.example.com`。
 
 ## 5. 配置应用环境变量
 
@@ -185,13 +185,14 @@ OPENAI_COMPATIBLE_MODEL_IDS=gpt-4o-mini
 OPENAI_COMPATIBLE_DEFAULT_MODEL=gpt-4o-mini
 OPENAI_COMPATIBLE_TITLE_MODEL=gpt-4o-mini
 
-SEAWEEDFS_S3_ENDPOINT=http://127.0.0.1:8333
-SEAWEEDFS_S3_REGION=us-east-1
-SEAWEEDFS_S3_ACCESS_KEY=seaweedfs
-SEAWEEDFS_S3_SECRET_KEY=change-this-seaweedfs-secret
-SEAWEEDFS_S3_BUCKET=chatbot-uploads
-SEAWEEDFS_PUBLIC_BASE_URL=http://127.0.0.1:8888/buckets
-SEAWEEDFS_S3_FORCE_PATH_STYLE=true
+RUSTFS_S3_ENDPOINT=http://127.0.0.1:9000
+RUSTFS_S3_REGION=us-east-1
+RUSTFS_S3_ACCESS_KEY=rustfsadmin
+RUSTFS_S3_SECRET_KEY=change-this-rustfs-secret
+RUSTFS_S3_BUCKET=chatbot-uploads
+RUSTFS_PUBLIC_BASE_URL=http://127.0.0.1:9000
+RUSTFS_S3_FORCE_PATH_STYLE=true
+RUSTFS_S3_PUBLIC_READ_POLICY=true
 
 POSTGRES_URL=postgres://chatbot:change-this-postgres-password@127.0.0.1:5432/chatbot
 REDIS_URL=redis://127.0.0.1:6379
@@ -250,9 +251,9 @@ docker run -d \
   -v chatbot-redis-data:/data \
   redis:7 redis-server --appendonly yes
 
-export SEAWEEDFS_S3_ACCESS_KEY=seaweedfs
-export SEAWEEDFS_S3_SECRET_KEY=0b040d87368ed348767bfa00dc954ebb
-docker compose -f docker-compose.seaweedfs.yml up -d
+export RUSTFS_S3_ACCESS_KEY=rustfsadmin
+export RUSTFS_S3_SECRET_KEY=20f986d22e0151871acf4c32ba1ad25d
+docker compose -f docker-compose.rustfs.yml up -d
 
 pnpm install
 pnpm storage:init
@@ -267,7 +268,7 @@ pnpm start
 
 ```bash
 docker ps
-docker compose -f docker-compose.seaweedfs.yml ps
+docker compose -f docker-compose.rustfs.yml ps
 ```
 
 查看日志：
@@ -275,20 +276,20 @@ docker compose -f docker-compose.seaweedfs.yml ps
 ```bash
 docker logs -f chatbot-postgres
 docker logs -f chatbot-redis
-docker compose -f docker-compose.seaweedfs.yml logs -f
+docker compose -f docker-compose.rustfs.yml logs -f
 ```
 
 停止服务：
 
 ```bash
 docker stop chatbot-postgres chatbot-redis
-docker compose -f docker-compose.seaweedfs.yml down
+docker compose -f docker-compose.rustfs.yml down
 ```
 
-仅删除 SeaweedFS 容器但保留数据卷：
+仅删除 RustFS 容器但保留数据卷：
 
 ```bash
-docker compose -f docker-compose.seaweedfs.yml down
+docker compose -f docker-compose.rustfs.yml down
 ```
 
 删除 PostgreSQL / Redis 容器但保留数据卷：

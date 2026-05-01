@@ -22,7 +22,7 @@ import { getChatHistoryPaginationKey } from "@/components/chat/sidebar-history";
 import { toast } from "@/components/chat/toast";
 import type { VisibilityType } from "@/components/chat/visibility-selector";
 import { useAutoResume } from "@/hooks/use-auto-resume";
-import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
+import { useModelConfig } from "@/hooks/use-model-config";
 import type { Vote } from "@/lib/db/schema";
 import { ChatbotError } from "@/lib/errors";
 import type { ChatMessage } from "@/lib/types";
@@ -56,10 +56,15 @@ function extractChatId(pathname: string): string | null {
   return match ? match[1] : null;
 }
 
+function normalizeModelId(modelId?: string | null) {
+  return modelId ?? "";
+}
+
 export function ActiveChatProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { setDataStream } = useDataStream();
   const { mutate } = useSWRConfig();
+  const { allowedModelIds, defaultModelId } = useModelConfig();
 
   const chatIdFromUrl = extractChatId(pathname);
   const isNewChat = !chatIdFromUrl;
@@ -73,11 +78,25 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
 
   const chatId = chatIdFromUrl ?? newChatIdRef.current;
 
-  const [currentModelId, setCurrentModelId] = useState(DEFAULT_CHAT_MODEL);
+  const [currentModelId, setCurrentModelIdState] = useState("");
+  const normalizeConfiguredModelId = (modelId?: string | null) => {
+    if (!defaultModelId) {
+      return normalizeModelId(modelId);
+    }
+
+    if (!modelId) {
+      return defaultModelId;
+    }
+
+    return allowedModelIds.has(modelId) ? modelId : defaultModelId;
+  };
+  const setCurrentModelId = (modelId: string) => {
+    setCurrentModelIdState(normalizeConfiguredModelId(modelId));
+  };
   const currentModelIdRef = useRef(currentModelId);
   useEffect(() => {
-    currentModelIdRef.current = currentModelId;
-  }, [currentModelId]);
+    currentModelIdRef.current = normalizeConfiguredModelId(currentModelId);
+  }, [currentModelId, allowedModelIds, defaultModelId]);
 
   const [input, setInput] = useState("");
   const [showCreditCardAlert, setShowCreditCardAlert] = useState(false);
@@ -144,7 +163,8 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
             ...(isToolApprovalContinuation
               ? { messages: request.messages }
               : { message: lastMessage }),
-            selectedChatModel: currentModelIdRef.current,
+            selectedChatModel:
+              currentModelIdRef.current || defaultModelId || currentModelId,
             selectedVisibilityType: visibility,
             ...request.body,
           },
@@ -198,16 +218,23 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
   }, [chatId, isNewChat, setMessages]);
 
   useEffect(() => {
-    if (chatData && !isNewChat) {
-      const cookieModel = document.cookie
-        .split("; ")
-        .find((row) => row.startsWith("chat-model="))
-        ?.split("=")[1];
-      if (cookieModel) {
-        setCurrentModelId(decodeURIComponent(cookieModel));
-      }
+    if (!defaultModelId) {
+      return;
     }
-  }, [chatData, isNewChat]);
+
+    const cookieModel = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("chat-model="))
+      ?.split("=")[1];
+
+    const nextModelId = normalizeConfiguredModelId(
+      cookieModel ? decodeURIComponent(cookieModel) : currentModelId
+    );
+
+    setCurrentModelIdState((current) =>
+      current === nextModelId ? current : nextModelId
+    );
+  }, [chatId, currentModelId, defaultModelId, allowedModelIds]);
 
   const hasAppendedQueryRef = useRef(false);
   useEffect(() => {
