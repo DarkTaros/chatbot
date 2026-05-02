@@ -85,7 +85,7 @@ export function getMessageByErrorCode(errorCode: ErrorCode): string {
       return "The request couldn't be processed. Please check your input and try again.";
 
     case "bad_request:provider":
-      return "OpenAI compatible provider is not configured correctly. Please check OPENAI_COMPATIBLE_BASE_URL and OPENAI_COMPATIBLE_API_KEY.";
+      return "OpenAI provider is not configured correctly. Please check OPENAI_API_KEY, or OPENAI_COMPATIBLE_API_KEY for legacy compatible endpoints.";
 
     case "unauthorized:auth":
       return "You need to sign in before continuing.";

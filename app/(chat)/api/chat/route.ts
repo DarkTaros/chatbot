@@ -17,6 +17,11 @@ import {
   DEFAULT_CHAT_MODEL,
   getCapabilities,
 } from "@/lib/ai/models";
+import { getOpenAIClient } from "@/lib/ai/openai-client";
+import {
+  collectOpenAIResponseStream,
+  convertToOpenAIResponseInput,
+} from "@/lib/ai/openai-responses";
 import { type RequestHints, systemPrompt } from "@/lib/ai/prompts";
 import { getLanguageModel } from "@/lib/ai/providers";
 import { createDocument } from "@/lib/ai/tools/create-document";
@@ -55,6 +60,16 @@ function getStreamContext() {
 }
 
 export { getStreamContext };
+
+function shouldUseOpenAIResponsesStream({
+  isToolApprovalFlow,
+}: {
+  isToolApprovalFlow: boolean;
+}) {
+  return (
+    !isToolApprovalFlow && process.env.OPENAI_RESPONSES_STREAMING !== "false"
+  );
+}
 
 export async function POST(request: Request) {
   let requestBody: PostRequestBody;
@@ -184,6 +199,70 @@ export async function POST(request: Request) {
     const isReasoningModel = capabilities?.reasoning === true;
     const supportsTools = capabilities?.tools === true;
 
+    if (shouldUseOpenAIResponsesStream({ isToolApprovalFlow })) {
+      const upstream = await getOpenAIClient()
+        .responses.create(
+          {
+            model: chatModel,
+            instructions: systemPrompt({
+              requestHints,
+              supportsTools: false,
+            }),
+            input: convertToOpenAIResponseInput(uiMessages),
+            stream: true,
+            store: true,
+          },
+          { signal: request.signal }
+        )
+        .asResponse();
+
+      if (!(upstream.ok && upstream.body)) {
+        const errorText = await upstream.text().catch(() => "");
+        console.error("OpenAI Responses stream failed:", errorText);
+        return new ChatbotError("offline:chat").toResponse();
+      }
+
+      const [clientStream, persistenceStream] = upstream.body.tee();
+      const assistantMessageId = generateUUID();
+      const persistStream = (async () => {
+        const [summary, title] = await Promise.all([
+          collectOpenAIResponseStream(persistenceStream),
+          titlePromise?.catch(() => null) ?? Promise.resolve(null),
+        ]);
+
+        if (summary.text.trim()) {
+          await saveMessages({
+            messages: [
+              {
+                id: assistantMessageId,
+                role: "assistant",
+                parts: [{ type: "text", text: summary.text }],
+                createdAt: new Date(),
+                attachments: [],
+                chatId: id,
+              },
+            ],
+          });
+        }
+
+        if (title) {
+          await updateChatTitleById({ chatId: id, title });
+        }
+      })();
+
+      after(() => persistStream);
+
+      return new Response(clientStream, {
+        headers: {
+          "Cache-Control": "no-cache",
+          Connection: "keep-alive",
+          "Content-Type":
+            upstream.headers.get("content-type") ?? "text/event-stream",
+          "X-OpenAI-Responses-Stream": "1",
+        },
+      });
+    }
+
     const modelMessages = await convertToModelMessages(uiMessages);
 
     const stream = createUIMessageStream({
@@ -277,7 +356,7 @@ export async function POST(request: Request) {
           });
         }
       },
-      onError: (error) => {
+      onError: (_error) => {
         return "Oops, an error occurred!";
       },
     });

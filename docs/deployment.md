@@ -178,6 +178,10 @@ openssl rand -base64 32
 ```bash
 AUTH_SECRET=replace-with-generated-secret
 
+OPENAI_API_KEY=replace-with-your-openai-api-key
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_RESPONSES_STREAMING=true
+
 OPENAI_COMPATIBLE_BASE_URL=https://your-openai-compatible-endpoint/v1
 OPENAI_COMPATIBLE_API_KEY=replace-with-your-api-key
 OPENAI_COMPATIBLE_PROVIDER_NAME=openai

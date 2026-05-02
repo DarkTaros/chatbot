@@ -2,13 +2,13 @@
 
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
 import { usePathname } from "next/navigation";
 import {
   createContext,
   type Dispatch,
   type ReactNode,
   type SetStateAction,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -18,6 +18,7 @@ import {
 import useSWR, { useSWRConfig } from "swr";
 import { unstable_serialize } from "swr/infinite";
 import { useDataStream } from "@/components/chat/data-stream-provider";
+import { OpenAIResponsesChatTransport } from "@/components/chat/openai-responses-transport";
 import { getChatHistoryPaginationKey } from "@/components/chat/sidebar-history";
 import { toast } from "@/components/chat/toast";
 import type { VisibilityType } from "@/components/chat/visibility-selector";
@@ -79,24 +80,30 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
   const chatId = chatIdFromUrl ?? newChatIdRef.current;
 
   const [currentModelId, setCurrentModelIdState] = useState("");
-  const normalizeConfiguredModelId = (modelId?: string | null) => {
-    if (!defaultModelId) {
-      return normalizeModelId(modelId);
-    }
+  const normalizeConfiguredModelId = useCallback(
+    (modelId?: string | null) => {
+      if (!defaultModelId) {
+        return normalizeModelId(modelId);
+      }
 
-    if (!modelId) {
-      return defaultModelId;
-    }
+      if (!modelId) {
+        return defaultModelId;
+      }
 
-    return allowedModelIds.has(modelId) ? modelId : defaultModelId;
-  };
-  const setCurrentModelId = (modelId: string) => {
-    setCurrentModelIdState(normalizeConfiguredModelId(modelId));
-  };
+      return allowedModelIds.has(modelId) ? modelId : defaultModelId;
+    },
+    [allowedModelIds, defaultModelId]
+  );
+  const setCurrentModelId = useCallback(
+    (modelId: string) => {
+      setCurrentModelIdState(normalizeConfiguredModelId(modelId));
+    },
+    [normalizeConfiguredModelId]
+  );
   const currentModelIdRef = useRef(currentModelId);
   useEffect(() => {
     currentModelIdRef.current = normalizeConfiguredModelId(currentModelId);
-  }, [currentModelId, allowedModelIds, defaultModelId]);
+  }, [currentModelId, normalizeConfiguredModelId]);
 
   const [input, setInput] = useState("");
   const [showCreditCardAlert, setShowCreditCardAlert] = useState(false);
@@ -141,7 +148,7 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
         ) ?? false
       );
     },
-    transport: new DefaultChatTransport({
+    transport: new OpenAIResponsesChatTransport({
       api: `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/chat`,
       fetch: fetchWithErrorHandlers,
       prepareSendMessagesRequest(request) {
@@ -234,7 +241,7 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
     setCurrentModelIdState((current) =>
       current === nextModelId ? current : nextModelId
     );
-  }, [chatId, currentModelId, defaultModelId, allowedModelIds]);
+  }, [currentModelId, defaultModelId, normalizeConfiguredModelId]);
 
   const hasAppendedQueryRef = useRef(false);
   useEffect(() => {
@@ -308,6 +315,7 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
       isLoading,
       votes,
       currentModelId,
+      setCurrentModelId,
       showCreditCardAlert,
     ]
   );

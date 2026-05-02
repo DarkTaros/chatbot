@@ -36,15 +36,17 @@
 
 ## Model Providers
 
-This template uses the [`@ai-sdk/openai-compatible`](https://ai-sdk.dev/providers/openai-compatible-providers) provider so you can connect any service that exposes an OpenAI-compatible API. Configure the base URL, API key, and model IDs in `.env.local`, and the app will use those models throughout the chat UI and server routes.
+This template uses the official OpenAI SDK and the Responses API for the primary chat stream. The server returns OpenAI's native streaming response, while the client transport adapts OpenAI stream events into the existing chat UI state.
 
-### OpenAI Compatible Configuration
+### OpenAI Configuration
 
-Set `OPENAI_COMPATIBLE_BASE_URL` and `OPENAI_COMPATIBLE_API_KEY` in your `.env.local` file.
+Set `OPENAI_API_KEY` in your `.env.local` file. If you use a proxy or OpenAI-compatible endpoint that supports `/v1/responses`, set `OPENAI_BASE_URL` as well.
 
 If you want to control which models appear in the UI, set `OPENAI_COMPATIBLE_MODEL_IDS` as a comma-separated list and choose the default with `OPENAI_COMPATIBLE_DEFAULT_MODEL`.
 
 If your endpoint has per-model capability differences, set `OPENAI_COMPATIBLE_MODEL_CAPABILITIES` to a JSON object keyed by model ID.
+
+Set `OPENAI_RESPONSES_STREAMING=false` to fall back to the legacy AI SDK server stream path.
 
 ## File Storage
 
@@ -96,3 +98,16 @@ pnpm dev
 ```
 
 Your app template should now be running on [localhost:3000](http://localhost:3000).
+
+
+
+
+curl -X POST https://litellm.ah-api.com/v1/completions 
+-H "Content-Type: application/json" 
+-H "Authorization: Bearer sk-7lWzCCBxiTVdQ-u0O4j8dA" 
+-d '{
+    "model": "gpt-5.4",
+    "prompt": "你好",
+    "max_tokens": 50,
+    "temperature": 0.7
+}'
