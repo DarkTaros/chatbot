@@ -112,6 +112,10 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
 
   const [input, setInput] = useState("");
   const [showCreditCardAlert, setShowCreditCardAlert] = useState(false);
+  const localeRef = useRef(locale);
+  useEffect(() => {
+    localeRef.current = locale;
+  }, [locale]);
 
   const { data: chatData, isLoading } = useSWR(
     isNewChat
@@ -178,7 +182,7 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
             selectedChatModel:
               currentModelIdRef.current || defaultModelId || currentModelId,
             selectedVisibilityType: visibility,
-            selectedLocale: locale,
+            selectedLocale: localeRef.current,
             ...request.body,
           },
         };

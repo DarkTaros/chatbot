@@ -32,10 +32,18 @@ export function normalizeLocale(value: unknown): Locale {
 
 export function getLocalePreferencePrompt(locale: Locale) {
   if (locale === "en") {
-    return "Conversation language preference: reply in English unless the user explicitly asks for another language.";
+    return [
+      "Conversation language preference: English.",
+      "Always reply in English, even when the user's message is written in another language.",
+      "Only switch away from English if the user explicitly asks you to reply in a different language.",
+    ].join("\n");
   }
 
-  return "对话语言偏好：除非用户明确要求使用其他语言，否则请使用中文回复。";
+  return [
+    "对话语言偏好：中文。",
+    "始终使用中文回复，即使用户用其他语言输入。",
+    "只有当用户明确要求你使用另一种语言回复时，才切换到其他语言。",
+  ].join("\n");
 }
 
 export const chatTranslations = {
