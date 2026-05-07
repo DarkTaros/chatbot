@@ -7,10 +7,12 @@ import { useActionState, useEffect, useState } from "react";
 import { AuthForm } from "@/components/chat/auth-form";
 import { SubmitButton } from "@/components/chat/submit-button";
 import { toast } from "@/components/chat/toast";
+import { useLocale } from "@/hooks/use-locale";
 import { type RegisterActionState, register } from "../actions";
 
 export default function Page() {
   const router = useRouter();
+  const { t } = useLocale();
   const [email, setEmail] = useState("");
   const [isSuccessful, setIsSuccessful] = useState(false);
 
@@ -24,21 +26,27 @@ export default function Page() {
   // biome-ignore lint/correctness/useExhaustiveDependencies: router and updateSession are stable refs
   useEffect(() => {
     if (state.status === "user_exists") {
-      toast({ type: "error", description: "Account already exists!" });
+      toast({ type: "error", description: t.auth.accountExists });
     } else if (state.status === "failed") {
-      toast({ type: "error", description: "Failed to create account!" });
+      toast({ type: "error", description: t.auth.createAccountFailed });
     } else if (state.status === "invalid_data") {
       toast({
         type: "error",
-        description: "Failed validating your submission!",
+        description: t.auth.invalidSubmission,
       });
     } else if (state.status === "success") {
-      toast({ type: "success", description: "Account created!" });
+      toast({ type: "success", description: t.auth.accountCreated });
       setIsSuccessful(true);
       updateSession();
       router.refresh();
     }
-  }, [state.status]);
+  }, [
+    state.status,
+    t.auth.accountCreated,
+    t.auth.accountExists,
+    t.auth.createAccountFailed,
+    t.auth.invalidSubmission,
+  ]);
 
   const handleSubmit = (formData: FormData) => {
     setEmail(formData.get("email") as string);
@@ -47,17 +55,19 @@ export default function Page() {
 
   return (
     <>
-      <h1 className="text-2xl font-semibold tracking-tight">Create account</h1>
-      <p className="text-sm text-muted-foreground">Get started for free</p>
+      <h1 className="text-2xl font-semibold tracking-tight">
+        {t.auth.registerTitle}
+      </h1>
+      <p className="text-sm text-muted-foreground">{t.auth.registerSubtitle}</p>
       <AuthForm action={handleSubmit} defaultEmail={email}>
-        <SubmitButton isSuccessful={isSuccessful}>Sign up</SubmitButton>
+        <SubmitButton isSuccessful={isSuccessful}>{t.auth.signUp}</SubmitButton>
         <p className="text-center text-[13px] text-muted-foreground">
-          {"Have an account? "}
+          {t.auth.haveAccount}{" "}
           <Link
             className="text-foreground underline-offset-4 hover:underline"
             href="/login"
           >
-            Sign in
+            {t.auth.signIn}
           </Link>
         </p>
       </AuthForm>

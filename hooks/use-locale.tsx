@@ -39,6 +39,10 @@ function persistLocale(locale: Locale) {
   document.cookie = `${LOCALE_STORAGE_KEY}=${encodeURIComponent(locale)}; path=/; max-age=${maxAge}`;
 }
 
+function getHtmlLang(locale: Locale) {
+  return locale === "zh" ? "zh-CN" : "en";
+}
+
 export function LocaleProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE);
 
@@ -50,6 +54,10 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
 
     setLocaleState(savedLocale);
   }, []);
+
+  useEffect(() => {
+    document.documentElement.lang = getHtmlLang(locale);
+  }, [locale]);
 
   const setLocale = useCallback((nextLocale: Locale) => {
     const normalizedLocale = normalizeLocale(nextLocale);

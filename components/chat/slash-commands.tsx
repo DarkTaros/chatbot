@@ -10,6 +10,7 @@ import {
   XIcon,
 } from "lucide-react";
 import { type ReactNode, useEffect, useRef } from "react";
+import { useLocale } from "@/hooks/use-locale";
 import { cn } from "@/lib/utils";
 
 export type SlashCommand = {
@@ -78,6 +79,7 @@ export function SlashCommandMenu({
   onClose: _onClose,
   selectedIndex,
 }: SlashCommandMenuProps) {
+  const { t } = useLocale();
   const menuRef = useRef<HTMLDivElement>(null);
   const filtered = slashCommands.filter((cmd) =>
     cmd.name.startsWith(query.toLowerCase())
@@ -100,7 +102,7 @@ export function SlashCommandMenu({
       ref={menuRef}
     >
       <div className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/40">
-        Commands
+        {t.slash.commands}
       </div>
       <div className="max-h-64 overflow-y-auto pb-1 no-scrollbar">
         {filtered.map((cmd, index) => (
@@ -122,7 +124,7 @@ export function SlashCommandMenu({
               /{cmd.name}
             </span>
             <span className="text-[12px] text-muted-foreground/50">
-              {cmd.description}
+              {t.slash[cmd.action as keyof typeof t.slash] ?? cmd.description}
             </span>
             {cmd.shortcut && (
               <span className="ml-auto text-[11px] text-muted-foreground/30">

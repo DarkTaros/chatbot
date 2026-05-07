@@ -20,10 +20,26 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useLocale } from "@/hooks/use-locale";
+import type { ChatTranslations } from "@/lib/i18n";
 import type { ChatMessage } from "@/lib/types";
 import { type ArtifactKind, artifactDefinitions } from "./artifact";
 import type { ArtifactToolbarItem } from "./create-artifact";
 import { ArrowUpIcon, StopIcon, SummarizeIcon } from "./icons";
+
+function translateToolbarDescription(description: string, t: ChatTranslations) {
+  const labels: Record<string, string> = {
+    "Add comments": t.artifact.addComments,
+    "Add final polish": t.artifact.finalPolish,
+    "Add logs": t.artifact.addLogs,
+    "Analyze and visualize data": t.artifact.analyzeData,
+    "Fix error": t.artifact.fixError,
+    "Format and clean data": t.artifact.formatData,
+    "Request suggestions": t.artifact.requestSuggestions,
+  };
+
+  return labels[description] ?? description;
+}
 
 type ToolProps = {
   description: string;
@@ -52,7 +68,9 @@ const Tool = ({
   sendMessage,
   onClick,
 }: ToolProps) => {
+  const { t } = useLocale();
   const [isHovered, setIsHovered] = useState(false);
+  const translatedDescription = translateToolbarDescription(description, t);
 
   useEffect(() => {
     if (selectedTool !== description) {
@@ -121,7 +139,7 @@ const Tool = ({
         side="left"
         sideOffset={16}
       >
-        {description}
+        {translatedDescription}
       </TooltipContent>
     </Tooltip>
   );
@@ -138,13 +156,14 @@ const ReadingLevelSelector = ({
   isAnimating: boolean;
   sendMessage: UseChatHelpers<ChatMessage>["sendMessage"];
 }) => {
+  const { t } = useLocale();
   const LEVELS = [
-    "Elementary",
-    "Middle School",
-    "Keep current level",
-    "High School",
-    "College",
-    "Graduate",
+    t.toolbar.elementary,
+    t.toolbar.middleSchool,
+    t.toolbar.keepCurrentLevel,
+    t.toolbar.highSchool,
+    t.toolbar.college,
+    t.toolbar.graduate,
   ];
 
   const y = useMotionValue(-40 * 2);

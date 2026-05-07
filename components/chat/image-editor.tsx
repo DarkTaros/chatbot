@@ -1,4 +1,5 @@
 import cn from "classnames";
+import { useLocale } from "@/hooks/use-locale";
 import { LoaderIcon } from "./icons";
 
 type ImageEditorProps = {
@@ -16,6 +17,8 @@ export function ImageEditor({
   status,
   isInline,
 }: ImageEditorProps) {
+  const { t } = useLocale();
+
   return (
     <div
       className={cn("flex w-full flex-row items-center justify-center", {
@@ -30,7 +33,7 @@ export function ImageEditor({
               <LoaderIcon />
             </div>
           )}
-          <div>Generating Image...</div>
+          <div>{t.artifact.generatingImage}</div>
         </div>
       ) : (
         <picture>

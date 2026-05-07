@@ -7,6 +7,7 @@ import {
   Collapsible,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { useLocale } from "@/hooks/use-locale";
 import { cn } from "@/lib/utils";
 import { cjk } from "@streamdown/cjk";
 import { code } from "@streamdown/code";
@@ -154,14 +155,22 @@ export type ReasoningTriggerProps = ComponentProps<
   getThinkingMessage?: (isStreaming: boolean, duration?: number) => ReactNode;
 };
 
-const defaultGetThinkingMessage = (isStreaming: boolean, duration?: number) => {
+const defaultGetThinkingMessage = (
+  isStreaming: boolean,
+  duration: number | undefined,
+  t?: ReturnType<typeof useLocale>["t"]
+) => {
   if (isStreaming || duration === 0) {
-    return <Shimmer className="font-medium" duration={1}>Thinking...</Shimmer>;
+    return (
+      <Shimmer className="font-medium" duration={1}>
+        {t?.aiElements.thinking ?? "Thinking..."}
+      </Shimmer>
+    );
   }
   if (duration === undefined) {
-    return <p>Thought for a few seconds</p>;
+    return <p>{t?.aiElements.thoughtFewSeconds ?? "Thought for a few seconds"}</p>;
   }
-  return <p>Thought for {duration} seconds</p>;
+  return <p>{t?.aiElements.thoughtSeconds(duration) ?? `Thought for ${duration} seconds`}</p>;
 };
 
 export const ReasoningTrigger = memo(
@@ -172,6 +181,7 @@ export const ReasoningTrigger = memo(
     ...props
   }: ReasoningTriggerProps) => {
     const { isStreaming, isOpen, duration } = useReasoning();
+    const { t } = useLocale();
 
     return (
       <CollapsibleTrigger
@@ -183,7 +193,9 @@ export const ReasoningTrigger = memo(
       >
         {children ?? (
           <>
-            {getThinkingMessage(isStreaming, duration)}
+            {getThinkingMessage === defaultGetThinkingMessage
+              ? defaultGetThinkingMessage(isStreaming, duration, t)
+              : getThinkingMessage(isStreaming, duration)}
             <ChevronDownIcon
               className={cn(
                 "size-4 transition-transform",

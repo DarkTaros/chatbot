@@ -14,6 +14,7 @@ import {
   RedoIcon,
   UndoIcon,
 } from "@/components/chat/icons";
+import { getPersistedChatTranslations } from "@/lib/i18n";
 import { generateUUID } from "@/lib/utils";
 
 const OUTPUT_HANDLERS = {
@@ -247,7 +248,7 @@ export const codeArtifact = new Artifact<"code", Metadata>({
       description: "Copy code to clipboard",
       onClick: ({ content }) => {
         navigator.clipboard.writeText(content);
-        toast.success("Copied to clipboard!");
+        toast.success(getPersistedChatTranslations().artifact.copied);
       },
     },
   ],

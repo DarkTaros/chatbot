@@ -54,6 +54,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useLocale } from "@/hooks/use-locale";
 import { cn } from "@/lib/utils";
 import {
   CornerDownLeftIcon,
@@ -338,9 +339,10 @@ export type PromptInputActionAddAttachmentsProps = ComponentProps<
 };
 
 export const PromptInputActionAddAttachments = ({
-  label = "Add photos or files",
+  label,
   ...props
 }: PromptInputActionAddAttachmentsProps) => {
+  const { t } = useLocale();
   const attachments = usePromptInputAttachments();
 
   const handleSelect = useCallback(
@@ -353,7 +355,8 @@ export const PromptInputActionAddAttachments = ({
 
   return (
     <DropdownMenuItem {...props} onSelect={handleSelect}>
-      <ImageIcon className="mr-2 size-4" /> {label}
+      <ImageIcon className="mr-2 size-4" />{" "}
+      {label ?? t.aiElements.uploadFiles}
     </DropdownMenuItem>
   );
 };
@@ -401,6 +404,7 @@ export const PromptInput = ({
   children,
   ...props
 }: PromptInputProps) => {
+  const { t } = useLocale();
   // Try to use a provider controller if present
   const controller = useOptionalPromptInputController();
   const usingProvider = !!controller;
@@ -459,7 +463,7 @@ export const PromptInput = ({
       if (incoming.length && accepted.length === 0) {
         onError?.({
           code: "accept",
-          message: "No files match the accepted types.",
+          message: t.aiElements.noAcceptedFiles,
         });
         return;
       }
@@ -469,7 +473,7 @@ export const PromptInput = ({
       if (accepted.length > 0 && sized.length === 0) {
         onError?.({
           code: "max_file_size",
-          message: "All files exceed the maximum size.",
+          message: t.aiElements.filesTooLarge,
         });
         return;
       }
@@ -484,7 +488,7 @@ export const PromptInput = ({
         if (typeof capacity === "number" && sized.length > capacity) {
           onError?.({
             code: "max_files",
-            message: "Too many files. Some were not added.",
+            message: t.aiElements.tooManyFiles,
           });
         }
         const next: (FileUIPart & { id: string })[] = [];
@@ -500,7 +504,15 @@ export const PromptInput = ({
         return [...prev, ...next];
       });
     },
-    [matchesAccept, maxFiles, maxFileSize, onError]
+    [
+      matchesAccept,
+      maxFiles,
+      maxFileSize,
+      onError,
+      t.aiElements.filesTooLarge,
+      t.aiElements.noAcceptedFiles,
+      t.aiElements.tooManyFiles,
+    ]
   );
 
   const removeLocal = useCallback(
@@ -523,7 +535,7 @@ export const PromptInput = ({
       if (incoming.length && accepted.length === 0) {
         onError?.({
           code: "accept",
-          message: "No files match the accepted types.",
+          message: t.aiElements.noAcceptedFiles,
         });
         return;
       }
@@ -533,7 +545,7 @@ export const PromptInput = ({
       if (accepted.length > 0 && sized.length === 0) {
         onError?.({
           code: "max_file_size",
-          message: "All files exceed the maximum size.",
+          message: t.aiElements.filesTooLarge,
         });
         return;
       }
@@ -548,7 +560,7 @@ export const PromptInput = ({
       if (typeof capacity === "number" && sized.length > capacity) {
         onError?.({
           code: "max_files",
-          message: "Too many files. Some were not added.",
+          message: t.aiElements.tooManyFiles,
         });
       }
 
@@ -556,7 +568,17 @@ export const PromptInput = ({
         controller?.attachments.add(capped);
       }
     },
-    [matchesAccept, maxFileSize, maxFiles, onError, files.length, controller]
+    [
+      matchesAccept,
+      maxFileSize,
+      maxFiles,
+      onError,
+      files.length,
+      controller,
+      t.aiElements.filesTooLarge,
+      t.aiElements.noAcceptedFiles,
+      t.aiElements.tooManyFiles,
+    ]
   );
 
   const clearAttachments = useCallback(
@@ -785,12 +807,12 @@ export const PromptInput = ({
     <>
       <input
         accept={accept}
-        aria-label="Upload files"
+        aria-label={t.aiElements.uploadFiles}
         className="hidden"
         multiple={multiple}
         onChange={handleChange}
         ref={inputRef}
-        title="Upload files"
+        title={t.aiElements.uploadFiles}
         type="file"
       />
       <form
@@ -835,9 +857,10 @@ export const PromptInputTextarea = ({
   onChange,
   onKeyDown,
   className,
-  placeholder = "What would you like to know?",
+  placeholder,
   ...props
 }: PromptInputTextareaProps) => {
+  const { t } = useLocale();
   const controller = useOptionalPromptInputController();
   const attachments = usePromptInputAttachments();
   const [isComposing, setIsComposing] = useState(false);
@@ -939,7 +962,7 @@ export const PromptInputTextarea = ({
       onCompositionStart={handleCompositionStart}
       onKeyDown={handleKeyDown}
       onPaste={handlePaste}
-      placeholder={placeholder}
+      placeholder={placeholder ?? t.aiElements.promptPlaceholder}
       {...props}
       {...controlledProps}
     />
@@ -1101,6 +1124,7 @@ export const PromptInputSubmit = ({
   children,
   ...props
 }: PromptInputSubmitProps) => {
+  const { t } = useLocale();
   const isGenerating = status === "submitted" || status === "streaming";
 
   let Icon = <CornerDownLeftIcon className="size-4" />;
@@ -1127,7 +1151,7 @@ export const PromptInputSubmit = ({
 
   return (
     <InputGroupButton
-      aria-label={isGenerating ? "Stop" : "Submit"}
+      aria-label={isGenerating ? t.aiElements.stop : t.aiElements.submit}
       className={cn(className)}
       onClick={handleClick}
       size={size}
