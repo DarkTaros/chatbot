@@ -69,13 +69,15 @@ POSTGRES_URL=postgres://chatbot:change-this-postgres-password@chatbot-postgres:5
 启动 Redis 7：
 
 ```bash
+export REDIS_PASSWORD=change-this-redis-password
+
 docker run -d \
   --name chatbot-redis \
   --restart unless-stopped \
   --network chatbot-net \
   -p 6379:6379 \
   -v chatbot-redis-data:/data \
-  redis:7 redis-server --appendonly yes
+  redis:7 redis-server --appendonly yes --requirepass "$REDIS_PASSWORD"
 ```
 
 检查状态：
@@ -88,13 +90,13 @@ docker logs --tail 50 chatbot-redis
 应用里对应的连接串示例：
 
 ```bash
-REDIS_URL=redis://127.0.0.1:6379
+REDIS_URL=redis://:change-this-redis-password@127.0.0.1:6379
 ```
 
 如果应用也运行在 Docker 容器中，并加入 `chatbot-net`，则也可以使用：
 
 ```bash
-REDIS_URL=redis://chatbot-redis:6379
+REDIS_URL=redis://:change-this-redis-password@chatbot-redis:6379
 ```
 
 ## 4. 部署 RustFS
@@ -194,7 +196,7 @@ RUSTFS_S3_FORCE_PATH_STYLE=true
 RUSTFS_S3_PUBLIC_READ_POLICY=true
 
 POSTGRES_URL=postgres://chatbot:change-this-postgres-password@127.0.0.1:5432/chatbot
-REDIS_URL=redis://127.0.0.1:6379
+REDIS_URL=redis://:change-this-redis-password@127.0.0.1:6379
 ```
 
 ## 6. 启动应用
@@ -231,6 +233,8 @@ pnpm start
 ```bash
 docker network create chatbot-net
 
+export REDIS_PASSWORD=2c55e5e7b3be0fb0cf3e1bd88d8de30d
+
 docker run -d \
   --name chatbot-postgres \
   --restart unless-stopped \
@@ -248,7 +252,7 @@ docker run -d \
   --network chatbot-net \
   -p 6379:6379 \
   -v chatbot-redis-data:/data \
-  redis:7 redis-server --appendonly yes
+  redis:7 redis-server --appendonly yes --requirepass "$REDIS_PASSWORD"
 
 export RUSTFS_S3_ACCESS_KEY=rustfsadmin
 export RUSTFS_S3_SECRET_KEY=20f986d22e0151871acf4c32ba1ad25d
