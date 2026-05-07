@@ -178,16 +178,11 @@ openssl rand -base64 32
 ```bash
 AUTH_SECRET=replace-with-generated-secret
 
-OPENAI_API_KEY=replace-with-your-openai-api-key
-OPENAI_BASE_URL=https://api.openai.com/v1
-OPENAI_RESPONSES_STREAMING=true
-
-OPENAI_COMPATIBLE_BASE_URL=https://your-openai-compatible-endpoint/v1
-OPENAI_COMPATIBLE_API_KEY=replace-with-your-api-key
-OPENAI_COMPATIBLE_PROVIDER_NAME=openai
-OPENAI_COMPATIBLE_MODEL_IDS=gpt-4o-mini
-OPENAI_COMPATIBLE_DEFAULT_MODEL=gpt-4o-mini
-OPENAI_COMPATIBLE_TITLE_MODEL=gpt-4o-mini
+LITELLM_BASE_URL=http://localhost:4000/v1
+LITELLM_API_KEY=replace-with-your-litellm-api-key
+LITELLM_DEFAULT_MODEL=gpt-4o-mini
+LITELLM_TITLE_MODEL=gpt-4o-mini
+LITELLM_MODEL_CAPABILITIES={"gpt-4o-mini":{"tools":false,"vision":false,"reasoning":false}}
 
 RUSTFS_S3_ENDPOINT=http://127.0.0.1:9000
 RUSTFS_S3_REGION=us-east-1

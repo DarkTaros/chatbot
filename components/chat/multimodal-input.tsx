@@ -6,6 +6,8 @@ import equal from "fast-deep-equal";
 import {
   ArrowUpIcon,
   BrainIcon,
+  CheckIcon,
+  ChevronRightIcon,
   EyeIcon,
   WrenchIcon,
 } from "lucide-react";
@@ -18,6 +20,7 @@ import {
   type SetStateAction,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -35,8 +38,8 @@ import {
   ModelSelectorName,
   ModelSelectorTrigger,
 } from "@/components/ai-elements/model-selector";
-import type { ChatModel } from "@/lib/ai/models";
 import { useModelConfig } from "@/hooks/use-model-config";
+import type { ChatModel } from "@/lib/ai/models";
 import type { Attachment, ChatMessage } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import {
@@ -61,6 +64,104 @@ function setCookie(name: string, value: string) {
   const maxAge = 60 * 60 * 24 * 365;
   // biome-ignore lint/suspicious/noDocumentCookie: needed for client-side cookie setting
   document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAge}`;
+}
+
+type ModelProviderGroup = {
+  name: string;
+  provider: string;
+  models: ChatModel[];
+};
+
+const providerNameOverrides: Record<string, string> = {
+  "alibaba-cn": "Alibaba",
+  "amazon-bedrock": "Amazon Bedrock",
+  "cloudflare-workers-ai": "Cloudflare",
+  "fireworks-ai": "Fireworks",
+  "github-copilot": "GitHub Copilot",
+  "github-models": "GitHub Models",
+  "google-vertex": "Google Vertex",
+  "google-vertex-anthropic": "Vertex Anthropic",
+  "moonshotai-cn": "Moonshot",
+  aihubmix: "AIHubMix",
+  lmstudio: "LM Studio",
+  modelscope: "ModelScope",
+  moonshotai: "Moonshot",
+  openai: "OpenAI",
+  xai: "xAI",
+  zai: "Z.ai",
+  zhipuai: "ZhipuAI",
+};
+
+function formatProviderName(provider: string) {
+  const override = providerNameOverrides[provider];
+
+  if (override) {
+    return override;
+  }
+
+  return provider
+    .replace(/-cn$/, "")
+    .split(/[-_]/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function getModelProvider(model: ChatModel) {
+  return model.provider || model.id.split("/")[0] || "openai";
+}
+
+function buildProviderGroups(models: ChatModel[]): ModelProviderGroup[] {
+  const groups = new Map<string, ModelProviderGroup>();
+
+  for (const model of models) {
+    const provider = getModelProvider(model);
+    const group = groups.get(provider);
+
+    if (group) {
+      group.models.push(model);
+      continue;
+    }
+
+    groups.set(provider, {
+      name: formatProviderName(provider),
+      provider,
+      models: [model],
+    });
+  }
+
+  return Array.from(groups.values()).sort((a, b) =>
+    a.name.localeCompare(b.name)
+  );
+}
+
+function filterProviderGroups(
+  groups: ModelProviderGroup[],
+  query: string
+): ModelProviderGroup[] {
+  const normalizedQuery = query.trim().toLowerCase();
+
+  if (!normalizedQuery) {
+    return groups;
+  }
+
+  return groups.flatMap((group) => {
+    const matchesProvider =
+      group.name.toLowerCase().includes(normalizedQuery) ||
+      group.provider.toLowerCase().includes(normalizedQuery);
+
+    if (matchesProvider) {
+      return [group];
+    }
+
+    const models = group.models.filter(
+      (model) =>
+        model.name.toLowerCase().includes(normalizedQuery) ||
+        model.id.toLowerCase().includes(normalizedQuery)
+    );
+
+    return models.length > 0 ? [{ ...group, models }] : [];
+  });
 }
 
 function PureMultimodalInput({
@@ -632,14 +733,59 @@ function PureModelSelectorCompact({
   onModelChange?: (modelId: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const { capabilities, defaultModelId, models: activeModels } =
-    useModelConfig();
+  const [activeProvider, setActiveProvider] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const {
+    capabilities,
+    defaultModelId,
+    models: activeModels,
+  } = useModelConfig();
 
   const selectedModel =
     activeModels.find((m: ChatModel) => m.id === selectedModelId) ??
     activeModels.find((m: ChatModel) => m.id === defaultModelId) ??
     activeModels[0];
-  const [provider] = selectedModel?.id.split("/") ?? [];
+  const selectedProvider = selectedModel ? getModelProvider(selectedModel) : "";
+  const providerGroups = useMemo(
+    () => buildProviderGroups(activeModels),
+    [activeModels]
+  );
+  const filteredProviderGroups = useMemo(
+    () => filterProviderGroups(providerGroups, searchQuery),
+    [providerGroups, searchQuery]
+  );
+  const activeProviderGroup =
+    filteredProviderGroups.find((group) => group.provider === activeProvider) ??
+    filteredProviderGroups.find(
+      (group) => group.provider === selectedProvider
+    ) ??
+    filteredProviderGroups[0];
+  const displayedActiveProvider = activeProviderGroup?.provider ?? "";
+  const focusComposer = useCallback(() => {
+    setTimeout(() => {
+      document
+        .querySelector<HTMLTextAreaElement>("[data-testid='multimodal-input']")
+        ?.focus();
+    }, 50);
+  }, []);
+
+  useEffect(() => {
+    if (!open) {
+      setSearchQuery("");
+      return;
+    }
+
+    setActiveProvider((currentProvider) => {
+      if (
+        currentProvider &&
+        providerGroups.some((group) => group.provider === currentProvider)
+      ) {
+        return currentProvider;
+      }
+
+      return selectedProvider || providerGroups[0]?.provider || currentProvider;
+    });
+  }, [open, providerGroups, selectedProvider]);
 
   return (
     <ModelSelector onOpenChange={setOpen} open={open}>
@@ -649,61 +795,89 @@ function PureModelSelectorCompact({
           data-testid="model-selector"
           variant="ghost"
         >
-          {provider && <ModelSelectorLogo provider={provider} />}
+          {selectedProvider && (
+            <ModelSelectorLogo provider={selectedProvider} />
+          )}
           <ModelSelectorName>
             {selectedModel?.name ?? selectedModelId ?? "Loading..."}
           </ModelSelectorName>
         </Button>
       </ModelSelectorTrigger>
-      <ModelSelectorContent>
-        <ModelSelectorInput placeholder="Search models..." />
-        <ModelSelectorList>
-          {activeModels.length === 0 ? (
+      <ModelSelectorContent className="w-[min(560px,calc(100vw-2rem))]">
+        <ModelSelectorInput
+          onValueChange={setSearchQuery}
+          placeholder="Search models..."
+          value={searchQuery}
+        />
+        <ModelSelectorList className="max-h-[340px]">
+          {activeModels.length === 0 || filteredProviderGroups.length === 0 ? (
             <ModelSelectorEmpty>No models found.</ModelSelectorEmpty>
           ) : (
-            <ModelSelectorGroup heading="Available">
-              {activeModels.map((model) => {
-                const logoProvider = model.id.split("/")[0];
-
-                return (
+            <div className="grid grid-cols-[minmax(0,150px)_minmax(0,1fr)] divide-x divide-border/50">
+              <ModelSelectorGroup className="min-w-0" heading="Channels">
+                {filteredProviderGroups.map((group) => (
                   <ModelSelectorItem
                     className={cn(
-                      "flex w-full",
-                      model.id === selectedModel?.id &&
-                        "border-b border-dashed border-foreground/50"
+                      "w-full",
+                      group.provider === displayedActiveProvider &&
+                        "bg-accent text-accent-foreground"
                     )}
-                    key={model.id}
-                    onSelect={() => {
-                      onModelChange?.(model.id);
-                      setCookie("chat-model", model.id);
-                      setOpen(false);
-                      setTimeout(() => {
-                        document
-                          .querySelector<HTMLTextAreaElement>(
-                            "[data-testid='multimodal-input']"
-                          )
-                          ?.focus();
-                      }, 50);
-                    }}
-                    value={model.id}
+                    key={group.provider}
+                    onSelect={() => setActiveProvider(group.provider)}
+                    value={`provider:${group.provider}`}
                   >
-                    <ModelSelectorLogo provider={logoProvider} />
-                    <ModelSelectorName>{model.name}</ModelSelectorName>
-                    <div className="ml-auto flex items-center gap-2 text-foreground/70">
-                      {capabilities?.[model.id]?.tools && (
-                        <WrenchIcon className="size-3.5" />
-                      )}
-                      {capabilities?.[model.id]?.vision && (
-                        <EyeIcon className="size-3.5" />
-                      )}
-                      {capabilities?.[model.id]?.reasoning && (
-                        <BrainIcon className="size-3.5" />
-                      )}
-                    </div>
+                    <ModelSelectorLogo provider={group.provider} />
+                    <ModelSelectorName>{group.name}</ModelSelectorName>
+                    <span className="ml-auto text-[11px] text-muted-foreground">
+                      {group.models.length}
+                    </span>
+                    <ChevronRightIcon className="size-3.5 text-muted-foreground" />
                   </ModelSelectorItem>
-                );
-              })}
-            </ModelSelectorGroup>
+                ))}
+              </ModelSelectorGroup>
+
+              <ModelSelectorGroup
+                className="min-w-0"
+                heading={activeProviderGroup?.name ?? "Models"}
+              >
+                {activeProviderGroup?.models.map((model) => {
+                  const logoProvider = getModelProvider(model);
+                  const isSelected = model.id === selectedModel?.id;
+
+                  return (
+                    <ModelSelectorItem
+                      className={cn(
+                        "flex w-full",
+                        isSelected && "bg-accent text-accent-foreground"
+                      )}
+                      key={model.id}
+                      onSelect={() => {
+                        onModelChange?.(model.id);
+                        setCookie("chat-model", model.id);
+                        setOpen(false);
+                        focusComposer();
+                      }}
+                      value={`model:${model.id}`}
+                    >
+                      <ModelSelectorLogo provider={logoProvider} />
+                      <ModelSelectorName>{model.name}</ModelSelectorName>
+                      <div className="ml-auto flex items-center gap-2 text-foreground/70">
+                        {capabilities?.[model.id]?.tools && (
+                          <WrenchIcon className="size-3.5" />
+                        )}
+                        {capabilities?.[model.id]?.vision && (
+                          <EyeIcon className="size-3.5" />
+                        )}
+                        {capabilities?.[model.id]?.reasoning && (
+                          <BrainIcon className="size-3.5" />
+                        )}
+                        {isSelected && <CheckIcon className="size-3.5" />}
+                      </div>
+                    </ModelSelectorItem>
+                  );
+                })}
+              </ModelSelectorGroup>
+            </div>
           )}
         </ModelSelectorList>
       </ModelSelectorContent>

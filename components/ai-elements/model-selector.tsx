@@ -50,7 +50,10 @@ export const ModelSelectorContent = ({
     sideOffset={8}
     {...props}
   >
-    <Command className="**:data-[slot=command-input-wrapper]:h-auto">
+    <Command
+      className="**:data-[slot=command-input-wrapper]:h-auto"
+      shouldFilter={false}
+    >
       {children}
     </Command>
   </PopoverContent>

@@ -85,7 +85,7 @@ export function getMessageByErrorCode(errorCode: ErrorCode): string {
       return "The request couldn't be processed. Please check your input and try again.";
 
     case "bad_request:provider":
-      return "OpenAI provider is not configured correctly. Please check OPENAI_API_KEY, or OPENAI_COMPATIBLE_API_KEY for legacy compatible endpoints.";
+      return "LiteLLM provider is not configured correctly. Please check LITELLM_BASE_URL, LITELLM_API_KEY, and model settings.";
 
     case "unauthorized:auth":
       return "You need to sign in before continuing.";

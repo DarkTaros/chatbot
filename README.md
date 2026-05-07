@@ -36,17 +36,15 @@
 
 ## Model Providers
 
-This template uses the official OpenAI SDK and the Responses API for the primary chat stream. The server returns OpenAI's native streaming response, while the client transport adapts OpenAI stream events into the existing chat UI state.
+This template uses LiteLLM Proxy and the Responses API for the primary chat stream. The server returns the proxy's OpenAI-compatible streaming response, while the client transport adapts Responses API stream events into the existing chat UI state.
 
-### OpenAI Configuration
+### LiteLLM Configuration
 
-Set `OPENAI_API_KEY` in your `.env.local` file. If you use a proxy or OpenAI-compatible endpoint that supports `/v1/responses`, set `OPENAI_BASE_URL` as well.
+Set `LITELLM_BASE_URL` and `LITELLM_API_KEY` in your `.env.local` file. `LITELLM_BASE_URL` should include the OpenAI API prefix, for example `http://localhost:4000/v1`.
 
-If you want to control which models appear in the UI, set `OPENAI_COMPATIBLE_MODEL_IDS` as a comma-separated list and choose the default with `OPENAI_COMPATIBLE_DEFAULT_MODEL`.
+The app reads available models from LiteLLM Proxy's `/models` endpoint. Optionally choose the default with `LITELLM_DEFAULT_MODEL`; when it is not set, the first model returned by LiteLLM is used.
 
-If your endpoint has per-model capability differences, set `OPENAI_COMPATIBLE_MODEL_CAPABILITIES` to a JSON object keyed by model ID.
-
-Set `OPENAI_RESPONSES_STREAMING=false` to fall back to the legacy AI SDK server stream path.
+If your LiteLLM models have per-model capability differences, set `LITELLM_MODEL_CAPABILITIES` to a JSON object keyed by model ID. Tool execution is disabled in the LiteLLM Responses API integration, so `tools` defaults to `false`.
 
 ## File Storage
 

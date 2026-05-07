@@ -4,9 +4,9 @@ import type { UIMessage } from "ai";
 import { cookies } from "next/headers";
 import { auth } from "@/app/(auth)/auth";
 import type { VisibilityType } from "@/components/chat/visibility-selector";
-import { titleModel } from "@/lib/ai/models";
-import { getOpenAIClient } from "@/lib/ai/openai-client";
-import { createOpenAITextInput } from "@/lib/ai/openai-responses";
+import { createLiteLLMTextResponse } from "@/lib/ai/litellm";
+import { createLiteLLMTextInput } from "@/lib/ai/litellm-responses";
+import { getTitleModelId } from "@/lib/ai/models";
 import { titlePrompt } from "@/lib/ai/prompts";
 import {
   deleteMessagesByChatIdAfterTimestamp,
@@ -26,18 +26,25 @@ export async function generateTitleFromUserMessage({
 }: {
   message: UIMessage;
 }) {
-  const response = await getOpenAIClient().responses.create({
-    model: titleModel.id,
+  const userText = getTextFromMessage(message).trim();
+  const fallbackTitle = userText || "New chat";
+
+  if (!userText) {
+    return fallbackTitle;
+  }
+
+  const text = await createLiteLLMTextResponse({
+    model: await getTitleModelId(),
     instructions: titlePrompt,
-    input: createOpenAITextInput(getTextFromMessage(message)),
+    input: createLiteLLMTextInput(userText),
   });
 
-  const text = response.output_text;
-
-  return text
-    .replace(/^[#*"\s]+/, "")
-    .replace(/["]+$/, "")
-    .trim();
+  return (
+    (text || fallbackTitle)
+      .replace(/^[#*"\s]+/, "")
+      .replace(/["]+$/, "")
+      .trim() || fallbackTitle
+  );
 }
 
 export async function deleteTrailingMessages({ id }: { id: string }) {

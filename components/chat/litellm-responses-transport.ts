@@ -46,7 +46,7 @@ function isAIUIMessageChunk(payload: Record<string, unknown>) {
   );
 }
 
-export class OpenAIResponsesChatTransport<
+export class LiteLLMResponsesChatTransport<
   UI_MESSAGE extends UIMessage,
 > extends HttpChatTransport<UI_MESSAGE> {
   constructor(options: HttpChatTransportInitOptions<UI_MESSAGE> = {}) {
@@ -63,7 +63,7 @@ export class OpenAIResponsesChatTransport<
         let buffer = "";
         let textStarted = false;
         let textEnded = false;
-        const textId = "openai-response-text";
+        const textId = "litellm-response-text";
 
         const startText = () => {
           if (textStarted) {
@@ -133,7 +133,7 @@ export class OpenAIResponsesChatTransport<
             const error =
               typeof payload.error === "object" && payload.error !== null
                 ? JSON.stringify(payload.error)
-                : "OpenAI response stream failed.";
+                : "LiteLLM response stream failed.";
             controller.enqueue({ type: "error", errorText: error });
             endText();
           }
@@ -166,7 +166,7 @@ export class OpenAIResponsesChatTransport<
             errorText:
               error instanceof Error
                 ? error.message
-                : "OpenAI response stream failed.",
+                : "LiteLLM response stream failed.",
           });
           endText();
         } finally {

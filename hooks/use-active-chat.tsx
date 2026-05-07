@@ -18,7 +18,7 @@ import {
 import useSWR, { useSWRConfig } from "swr";
 import { unstable_serialize } from "swr/infinite";
 import { useDataStream } from "@/components/chat/data-stream-provider";
-import { OpenAIResponsesChatTransport } from "@/components/chat/openai-responses-transport";
+import { LiteLLMResponsesChatTransport } from "@/components/chat/litellm-responses-transport";
 import { getChatHistoryPaginationKey } from "@/components/chat/sidebar-history";
 import { toast } from "@/components/chat/toast";
 import type { VisibilityType } from "@/components/chat/visibility-selector";
@@ -148,7 +148,7 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
         ) ?? false
       );
     },
-    transport: new OpenAIResponsesChatTransport({
+    transport: new LiteLLMResponsesChatTransport({
       api: `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/chat`,
       fetch: fetchWithErrorHandlers,
       prepareSendMessagesRequest(request) {

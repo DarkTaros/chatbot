@@ -23,6 +23,7 @@ test.describe("Model Selector", () => {
     await modelButton.click();
 
     await expect(page.getByPlaceholder("Search models...")).toBeVisible();
+    await expect(page.getByText("Channels")).toBeVisible();
   });
 
   test("can search for models", async ({ page }) => {
@@ -59,17 +60,19 @@ test.describe("Model Selector", () => {
       .first();
     await modelButton.click();
 
+    await expect(page.getByText("Channels")).toBeVisible();
     await expect(page.getByText("Mistral")).toBeVisible();
     await expect(page.getByText("Moonshot")).toBeVisible();
   });
 
-  test("can select a different model", async ({ page }) => {
+  test("can select a model from a provider", async ({ page }) => {
     const modelButton = page
       .locator("button")
       .filter({ hasText: MODEL_BUTTON_REGEX })
       .first();
     await modelButton.click();
 
+    await page.getByText("Mistral").first().click();
     await page.getByText("Mistral Small").first().click();
 
     await expect(page.getByPlaceholder("Search models...")).not.toBeVisible();

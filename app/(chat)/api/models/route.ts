@@ -1,17 +1,18 @@
 import {
-  DEFAULT_CHAT_MODEL,
   getActiveModels,
   getCapabilities,
+  getDefaultChatModel,
 } from "@/lib/ai/models";
 
 export async function GET() {
-  const [capabilities, models] = await Promise.all([
-    getCapabilities(),
-    Promise.resolve(getActiveModels()),
+  const models = await getActiveModels();
+  const [capabilities, defaultModel] = await Promise.all([
+    getCapabilities(models),
+    getDefaultChatModel(models),
   ]);
 
   return Response.json(
-    { capabilities, defaultModel: DEFAULT_CHAT_MODEL, models },
+    { capabilities, defaultModel, models },
     {
       headers: {
         "Cache-Control": "no-store, max-age=0",

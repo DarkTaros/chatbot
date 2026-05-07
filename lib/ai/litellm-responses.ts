@@ -4,7 +4,7 @@ import type { ResponseInput } from "openai/resources/responses/responses";
 import type { ChatMessage } from "@/lib/types";
 import { getTextFromMessage } from "@/lib/utils";
 
-type OpenAIStreamSummary = {
+type LiteLLMStreamSummary = {
   responseId?: string;
   text: string;
   usage?: unknown;
@@ -39,7 +39,7 @@ function isImageFilePart(part: unknown): part is {
   );
 }
 
-export function convertToOpenAIResponseInput(
+export function convertToLiteLLMResponseInput(
   messages: ChatMessage[]
 ): ResponseInput {
   return messages
@@ -92,7 +92,7 @@ export function convertToOpenAIResponseInput(
     );
 }
 
-export function createOpenAITextInput(text: string): ResponseInput {
+export function createLiteLLMTextInput(text: string): ResponseInput {
   return [
     {
       type: "message",
@@ -137,9 +137,9 @@ function extractCompletedText(response: unknown) {
   return "";
 }
 
-export async function collectOpenAIResponseStream(
+export async function collectLiteLLMResponseStream(
   stream: ReadableStream<Uint8Array>
-): Promise<OpenAIStreamSummary> {
+): Promise<LiteLLMStreamSummary> {
   const reader = stream.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
@@ -167,7 +167,10 @@ export async function collectOpenAIResponseStream(
       responseId = parsed.response_id;
     }
 
-    if (type === "response.output_text.delta") {
+    if (
+      type === "response.output_text.delta" ||
+      type === "response.refusal.delta"
+    ) {
       text += typeof parsed.delta === "string" ? parsed.delta : "";
       return;
     }
