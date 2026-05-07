@@ -57,6 +57,9 @@ const nextConfig: NextConfig = {
     remotePatterns,
   },
   experimental: {
+    serverActions: {
+      allowedOrigins: ["chat.ah-api.com"],
+    },
     prefetchInlining: true,
     cachedNavigations: true,
     appNewScrollHandler: true,
