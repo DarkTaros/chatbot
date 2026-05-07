@@ -43,6 +43,7 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_BASE_PATH: basePath,
   },
   cacheComponents: true,
+  allowedDevOrigins: ["127.0.0.1"],
   devIndicators: false,
   poweredByHeader: false,
   reactCompiler: true,

@@ -3,7 +3,7 @@
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { motion } from "framer-motion";
 import { memo } from "react";
-import { suggestions } from "@/lib/constants";
+import { useLocale } from "@/hooks/use-locale";
 import type { ChatMessage } from "@/lib/types";
 import { Suggestion } from "../ai-elements/suggestion";
 import type { VisibilityType } from "./visibility-selector";
@@ -15,7 +15,8 @@ type SuggestedActionsProps = {
 };
 
 function PureSuggestedActions({ chatId, sendMessage }: SuggestedActionsProps) {
-  const suggestedActions = suggestions;
+  const { t } = useLocale();
+  const suggestedActions = t.suggestions;
 
   return (
     <div

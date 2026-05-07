@@ -17,6 +17,7 @@ import {
   useArtifact,
   useArtifactSelector,
 } from "@/hooks/use-artifact";
+import { useLocale } from "@/hooks/use-locale";
 import type { Attachment, ChatMessage } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Artifact } from "./artifact";
@@ -47,6 +48,7 @@ export function ChatShell() {
     showCreditCardAlert,
     setShowCreditCardAlert,
   } = useActiveChat();
+  const { t } = useLocale();
 
   const [editingMessage, setEditingMessage] = useState<ChatMessage | null>(
     null
@@ -177,15 +179,17 @@ export function ChatShell() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Activate AI Gateway</AlertDialogTitle>
+            <AlertDialogTitle>{t.shell.activateGatewayTitle}</AlertDialogTitle>
             <AlertDialogDescription>
-              This application requires{" "}
-              {process.env.NODE_ENV === "production" ? "the owner" : "you"} to
-              activate Vercel AI Gateway.
+              {t.shell.activateGatewayDescriptionPrefix}{" "}
+              {process.env.NODE_ENV === "production"
+                ? t.shell.activateGatewayOwner
+                : t.shell.activateGatewayYou}{" "}
+              {t.shell.activateGatewayDescriptionSuffix}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t.shell.cancel}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 window.open(
@@ -195,7 +199,7 @@ export function ChatShell() {
                 window.location.href = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/`;
               }}
             >
-              Activate
+              {t.shell.activate}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

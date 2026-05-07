@@ -40,8 +40,14 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { id, message, messages, selectedChatModel, selectedVisibilityType } =
-      requestBody;
+    const {
+      id,
+      message,
+      messages,
+      selectedChatModel,
+      selectedLocale,
+      selectedVisibilityType,
+    } = requestBody;
 
     const [, session] = await Promise.all([
       checkBotId().catch(() => null),
@@ -123,6 +129,7 @@ export async function POST(request: Request) {
     const upstream = await createLiteLLMResponseStream({
       model: chatModel,
       instructions: systemPrompt({
+        locale: selectedLocale,
         requestHints,
         supportsTools: false,
       }),

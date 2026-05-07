@@ -1,11 +1,17 @@
 "use client";
 
-import { PanelLeftIcon } from "lucide-react";
-import Link from "next/link";
+import { CheckIcon, LanguagesIcon, PanelLeftIcon } from "lucide-react";
 import { memo } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useSidebar } from "@/components/ui/sidebar";
-import { VercelIcon } from "./icons";
+import { useLocale } from "@/hooks/use-locale";
+import { localeOptions } from "@/lib/i18n";
 import { VisibilitySelector, type VisibilityType } from "./visibility-selector";
 
 function PureChatHeader({
@@ -17,11 +23,7 @@ function PureChatHeader({
   selectedVisibilityType: VisibilityType;
   isReadonly: boolean;
 }) {
-  const { state, toggleSidebar, isMobile } = useSidebar();
-
-  if (state === "collapsed" && !isMobile) {
-    return null;
-  }
+  const { toggleSidebar } = useSidebar();
 
   return (
     <header className="sticky top-0 flex h-14 items-center gap-2 bg-sidebar px-3">
@@ -34,14 +36,7 @@ function PureChatHeader({
         <PanelLeftIcon className="size-4" />
       </Button>
 
-      <Link
-        className="flex size-8 items-center justify-center rounded-lg md:hidden"
-        href="https://vercel.com/templates/next.js/chatbot"
-        rel="noopener noreferrer"
-        target="_blank"
-      >
-        <VercelIcon size={14} />
-      </Link>
+      <LanguageSelector className="md:hidden" compact />
 
       {!isReadonly && (
         <VisibilitySelector
@@ -50,19 +45,7 @@ function PureChatHeader({
         />
       )}
 
-      <Button
-        asChild
-        className="hidden rounded-lg bg-foreground px-4 text-background hover:bg-foreground/90 md:ml-auto md:flex"
-      >
-        <Link
-          href="https://vercel.com/templates/next.js/chatbot"
-          rel="noopener noreferrer"
-          target="_blank"
-        >
-          <VercelIcon size={16} />
-          Deploy with Vercel
-        </Link>
-      </Button>
+      <LanguageSelector className="hidden md:ml-auto md:flex" />
     </header>
   );
 }
@@ -74,3 +57,52 @@ export const ChatHeader = memo(PureChatHeader, (prevProps, nextProps) => {
     prevProps.isReadonly === nextProps.isReadonly
   );
 });
+
+function LanguageSelector({
+  className,
+  compact = false,
+}: {
+  className?: string;
+  compact?: boolean;
+}) {
+  const { locale, setLocale, t } = useLocale();
+  const selectedLocale =
+    localeOptions.find((option) => option.id === locale) ?? localeOptions[0];
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          aria-label={t.language.tooltip}
+          className={className}
+          data-testid={
+            compact ? "language-selector-mobile" : "language-selector"
+          }
+          size={compact ? "icon-sm" : "sm"}
+          title={t.language.tooltip}
+          variant="outline"
+        >
+          <LanguagesIcon className="size-4" />
+          {compact ? (
+            <span className="text-[11px]">{selectedLocale.shortLabel}</span>
+          ) : (
+            <span>{selectedLocale.label}</span>
+          )}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-36">
+        {localeOptions.map((option) => (
+          <DropdownMenuItem
+            className="cursor-pointer justify-between"
+            data-testid={`language-selector-item-${option.id}`}
+            key={option.id}
+            onSelect={() => setLocale(option.id)}
+          >
+            <span>{option.label}</span>
+            {option.id === locale ? <CheckIcon className="size-4" /> : null}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}

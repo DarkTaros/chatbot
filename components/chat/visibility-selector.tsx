@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useChatVisibility } from "@/hooks/use-chat-visibility";
+import { useLocale } from "@/hooks/use-locale";
 import { cn } from "@/lib/utils";
 import {
   CheckCircleFillIcon,
@@ -21,20 +22,14 @@ export type VisibilityType = "private" | "public";
 
 const visibilities: Array<{
   id: VisibilityType;
-  label: string;
-  description: string;
   icon: ReactNode;
 }> = [
   {
     id: "private",
-    label: "Private",
-    description: "Only you can access this chat",
     icon: <LockIcon />,
   },
   {
     id: "public",
-    label: "Public",
-    description: "Anyone with the link can access this chat",
     icon: <GlobeIcon />,
   },
 ];
@@ -48,6 +43,7 @@ export function VisibilitySelector({
   selectedVisibilityType: VisibilityType;
 } & React.ComponentProps<typeof Button>) {
   const [open, setOpen] = useState(false);
+  const { t } = useLocale();
 
   const { visibilityType, setVisibilityType } = useChatVisibility({
     chatId,
@@ -58,6 +54,9 @@ export function VisibilitySelector({
     () => visibilities.find((visibility) => visibility.id === visibilityType),
     [visibilityType]
   );
+  const selectedVisibilityText = selectedVisibility
+    ? t.visibility[selectedVisibility.id]
+    : null;
 
   return (
     <DropdownMenu onOpenChange={setOpen} open={open}>
@@ -75,7 +74,7 @@ export function VisibilitySelector({
           variant="outline"
         >
           {selectedVisibility?.icon}
-          <span className="md:sr-only">{selectedVisibility?.label}</span>
+          <span className="md:sr-only">{selectedVisibilityText?.label}</span>
           <ChevronDownIcon />
         </Button>
       </DropdownMenuTrigger>
@@ -93,10 +92,10 @@ export function VisibilitySelector({
             }}
           >
             <div className="flex flex-col items-start gap-1">
-              {visibility.label}
-              {visibility.description && (
+              {t.visibility[visibility.id].label}
+              {t.visibility[visibility.id].description && (
                 <div className="text-muted-foreground text-xs">
-                  {visibility.description}
+                  {t.visibility[visibility.id].description}
                 </div>
               )}
             </div>

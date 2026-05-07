@@ -32,6 +32,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { useLocale } from "@/hooks/use-locale";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,6 +50,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
   const { setOpenMobile, toggleSidebar } = useSidebar();
   const { mutate } = useSWRConfig();
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
+  const { t } = useLocale();
 
   const handleDeleteAll = () => {
     setShowDeleteAllDialog(false);
@@ -61,7 +63,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
       method: "DELETE",
     });
 
-    toast.success("All chats deleted");
+    toast.success(t.sidebar.allChatsDeleted);
   };
 
   return (
@@ -74,7 +76,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                 <SidebarMenuButton
                   asChild
                   className="size-8 !px-0 items-center justify-center group-data-[collapsible=icon]:group-hover/logo:opacity-0"
-                  tooltip="Chatbot"
+                  tooltip={t.app.name}
                 >
                   <Link href="/" onClick={() => setOpenMobile(false)}>
                     <MessageSquareIcon className="size-4 text-sidebar-foreground/50" />
@@ -90,7 +92,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                     </SidebarMenuButton>
                   </TooltipTrigger>
                   <TooltipContent className="hidden md:block" side="right">
-                    Open sidebar
+                    {t.sidebar.openSidebar}
                   </TooltipContent>
                 </Tooltip>
               </div>
@@ -111,10 +113,10 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                       setOpenMobile(false);
                       router.push("/");
                     }}
-                    tooltip="New Chat"
+                    tooltip={t.sidebar.newChat}
                   >
                     <PenSquareIcon className="size-4" />
-                    <span className="font-medium">New chat</span>
+                    <span className="font-medium">{t.sidebar.newChat}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 {user && (
@@ -122,10 +124,10 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                     <SidebarMenuButton
                       className="rounded-lg text-sidebar-foreground/40 transition-colors duration-150 hover:bg-destructive/10 hover:text-destructive"
                       onClick={() => setShowDeleteAllDialog(true)}
-                      tooltip="Delete All Chats"
+                      tooltip={t.sidebar.deleteAll}
                     >
                       <TrashIcon className="size-4" />
-                      <span className="text-[13px]">Delete all</span>
+                      <span className="text-[13px]">{t.sidebar.deleteAll}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}
@@ -146,16 +148,15 @@ export function AppSidebar({ user }: { user: User | undefined }) {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete all chats?</AlertDialogTitle>
+            <AlertDialogTitle>{t.sidebar.deleteAllChats}</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete all
-              your chats and remove them from our servers.
+              {t.sidebar.deleteAllDescription}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t.input.cancel}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteAll}>
-              Delete All
+              {t.sidebar.deleteAllAction}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

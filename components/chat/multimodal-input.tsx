@@ -38,6 +38,7 @@ import {
   ModelSelectorName,
   ModelSelectorTrigger,
 } from "@/components/ai-elements/model-selector";
+import { useLocale } from "@/hooks/use-locale";
 import { useModelConfig } from "@/hooks/use-model-config";
 import type { ChatModel } from "@/lib/ai/models";
 import type { Attachment, ChatMessage } from "@/lib/types";
@@ -205,6 +206,7 @@ function PureMultimodalInput({
 }) {
   const router = useRouter();
   const { setTheme, resolvedTheme } = useTheme();
+  const { t } = useLocale();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { width } = useWindowSize();
   const hasAutoFocused = useRef(false);
@@ -259,7 +261,7 @@ function PureMultimodalInput({
         setMessages(() => []);
         break;
       case "rename":
-        toast("Rename is available from the sidebar chat menu.");
+        toast(t.input.renameAvailable);
         break;
       case "model": {
         const modelBtn = document.querySelector<HTMLButtonElement>(
@@ -272,30 +274,30 @@ function PureMultimodalInput({
         setTheme(resolvedTheme === "dark" ? "light" : "dark");
         break;
       case "delete":
-        toast("Delete this chat?", {
+        toast(t.input.deleteThisChat, {
           action: {
-            label: "Delete",
+            label: t.input.delete,
             onClick: () => {
               fetch(
                 `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/chat?id=${chatId}`,
                 { method: "DELETE" }
               );
               router.push("/");
-              toast.success("Chat deleted");
+              toast.success(t.input.chatDeleted);
             },
           },
         });
         break;
       case "purge":
-        toast("Delete all chats?", {
+        toast(t.input.deleteAllChats, {
           action: {
-            label: "Delete all",
+            label: t.input.deleteAll,
             onClick: () => {
               fetch(`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/history`, {
                 method: "DELETE",
               });
               router.push("/");
-              toast.success("All chats deleted");
+              toast.success(t.input.allChatsDeleted);
             },
           },
         });
@@ -352,35 +354,38 @@ function PureMultimodalInput({
     chatId,
   ]);
 
-  const uploadFile = useCallback(async (file: File) => {
-    const formData = new FormData();
-    formData.append("file", file);
+  const uploadFile = useCallback(
+    async (file: File) => {
+      const formData = new FormData();
+      formData.append("file", file);
 
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/files/upload`,
-        {
-          method: "POST",
-          body: formData,
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/files/upload`,
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          const { url, pathname, contentType } = data;
+
+          return {
+            url,
+            name: pathname,
+            contentType,
+          };
         }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        const { url, pathname, contentType } = data;
-
-        return {
-          url,
-          name: pathname,
-          contentType,
-        };
+        const { error } = await response.json();
+        toast.error(error);
+      } catch (_error) {
+        toast.error(t.input.uploadFailed);
       }
-      const { error } = await response.json();
-      toast.error(error);
-    } catch (_error) {
-      toast.error("Failed to upload file, please try again!");
-    }
-  }, []);
+    },
+    [t.input.uploadFailed]
+  );
 
   const handleFileChange = useCallback(
     async (event: ChangeEvent<HTMLInputElement>) => {
@@ -400,12 +405,12 @@ function PureMultimodalInput({
           ...successfullyUploadedAttachments,
         ]);
       } catch (_error) {
-        toast.error("Failed to upload files");
+        toast.error(t.input.uploadFilesFailed);
       } finally {
         setUploadQueue([]);
       }
     },
-    [setAttachments, uploadFile]
+    [setAttachments, t.input.uploadFilesFailed, uploadFile]
   );
 
   const handlePaste = useCallback(
@@ -425,7 +430,7 @@ function PureMultimodalInput({
 
       event.preventDefault();
 
-      setUploadQueue((prev) => [...prev, "Pasted image"]);
+      setUploadQueue((prev) => [...prev, t.input.pastedImage]);
 
       try {
         const uploadPromises = imageItems
@@ -446,12 +451,17 @@ function PureMultimodalInput({
           ...(successfullyUploadedAttachments as Attachment[]),
         ]);
       } catch (_error) {
-        toast.error("Failed to upload pasted image(s)");
+        toast.error(t.input.uploadPastedFailed);
       } finally {
         setUploadQueue([]);
       }
     },
-    [setAttachments, uploadFile]
+    [
+      setAttachments,
+      t.input.pastedImage,
+      t.input.uploadPastedFailed,
+      uploadFile,
+    ]
   );
 
   useEffect(() => {
@@ -468,7 +478,7 @@ function PureMultimodalInput({
     <div className={cn("relative flex w-full flex-col gap-4", className)}>
       {editingMessage && onCancelEdit && (
         <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
-          <span>Editing message</span>
+          <span>{t.input.editingMessage}</span>
           <button
             className="rounded px-1.5 py-0.5 text-muted-foreground/50 transition-colors hover:bg-muted hover:text-foreground"
             onMouseDown={(e) => {
@@ -477,7 +487,7 @@ function PureMultimodalInput({
             }}
             type="button"
           >
-            Cancel
+            {t.input.cancel}
           </button>
         </div>
       )}
@@ -531,7 +541,7 @@ function PureMultimodalInput({
           if (status === "ready" || status === "error") {
             submitForm();
           } else {
-            toast.error("Please wait for the model to finish its response!");
+            toast.error(t.input.waitForResponse);
           }
         }}
       >
@@ -606,7 +616,7 @@ function PureMultimodalInput({
             }
           }}
           placeholder={
-            editingMessage ? "Edit your message..." : "Ask anything..."
+            editingMessage ? t.input.editPlaceholder : t.input.askPlaceholder
           }
           ref={textareaRef}
           value={input}
@@ -689,6 +699,7 @@ function PureAttachmentsButton({
   status: UseChatHelpers<ChatMessage>["status"];
   selectedModelId: string;
 }) {
+  const { t } = useLocale();
   const { allowedModelIds, defaultModelId, getCapabilities } = useModelConfig();
   const resolvedModelId = allowedModelIds.has(selectedModelId)
     ? selectedModelId
@@ -697,9 +708,9 @@ function PureAttachmentsButton({
   const isGenerating = status === "submitted" || status === "streaming";
   const buttonTitle = hasVision
     ? isGenerating
-      ? "Wait for the current response to finish"
-      : "Attach an image"
-    : "Current model does not support image attachments";
+      ? t.input.waitForCurrentResponse
+      : t.input.attachImage
+    : t.input.modelNoVision;
 
   return (
     <Button
@@ -732,6 +743,7 @@ function PureModelSelectorCompact({
   selectedModelId: string;
   onModelChange?: (modelId: string) => void;
 }) {
+  const { t } = useLocale();
   const [open, setOpen] = useState(false);
   const [activeProvider, setActiveProvider] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -799,22 +811,25 @@ function PureModelSelectorCompact({
             <ModelSelectorLogo provider={selectedProvider} />
           )}
           <ModelSelectorName>
-            {selectedModel?.name ?? selectedModelId ?? "Loading..."}
+            {selectedModel?.name ?? selectedModelId ?? t.input.loading}
           </ModelSelectorName>
         </Button>
       </ModelSelectorTrigger>
       <ModelSelectorContent className="w-[min(560px,calc(100vw-2rem))]">
         <ModelSelectorInput
           onValueChange={setSearchQuery}
-          placeholder="Search models..."
+          placeholder={t.input.searchModels}
           value={searchQuery}
         />
         <ModelSelectorList className="max-h-[340px]">
           {activeModels.length === 0 || filteredProviderGroups.length === 0 ? (
-            <ModelSelectorEmpty>No models found.</ModelSelectorEmpty>
+            <ModelSelectorEmpty>{t.input.noModels}</ModelSelectorEmpty>
           ) : (
             <div className="grid grid-cols-[minmax(0,150px)_minmax(0,1fr)] divide-x divide-border/50">
-              <ModelSelectorGroup className="min-w-0" heading="Channels">
+              <ModelSelectorGroup
+                className="min-w-0"
+                heading={t.input.channels}
+              >
                 {filteredProviderGroups.map((group) => (
                   <ModelSelectorItem
                     className={cn(
@@ -838,7 +853,7 @@ function PureModelSelectorCompact({
 
               <ModelSelectorGroup
                 className="min-w-0"
-                heading={activeProviderGroup?.name ?? "Models"}
+                heading={activeProviderGroup?.name ?? t.input.models}
               >
                 {activeProviderGroup?.models.map((model) => {
                   const logoProvider = getModelProvider(model);

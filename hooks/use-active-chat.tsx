@@ -23,9 +23,11 @@ import { getChatHistoryPaginationKey } from "@/components/chat/sidebar-history";
 import { toast } from "@/components/chat/toast";
 import type { VisibilityType } from "@/components/chat/visibility-selector";
 import { useAutoResume } from "@/hooks/use-auto-resume";
+import { useLocale } from "@/hooks/use-locale";
 import { useModelConfig } from "@/hooks/use-model-config";
 import type { Vote } from "@/lib/db/schema";
 import { ChatbotError } from "@/lib/errors";
+import type { Locale } from "@/lib/i18n";
 import type { ChatMessage } from "@/lib/types";
 import { fetcher, fetchWithErrorHandlers, generateUUID } from "@/lib/utils";
 
@@ -46,6 +48,8 @@ type ActiveChatContextValue = {
   votes: Vote[] | undefined;
   currentModelId: string;
   setCurrentModelId: (id: string) => void;
+  locale: Locale;
+  setLocale: (locale: Locale) => void;
   showCreditCardAlert: boolean;
   setShowCreditCardAlert: Dispatch<SetStateAction<boolean>>;
 };
@@ -66,6 +70,7 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
   const { setDataStream } = useDataStream();
   const { mutate } = useSWRConfig();
   const { allowedModelIds, defaultModelId } = useModelConfig();
+  const { locale, setLocale } = useLocale();
 
   const chatIdFromUrl = extractChatId(pathname);
   const isNewChat = !chatIdFromUrl;
@@ -173,6 +178,7 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
             selectedChatModel:
               currentModelIdRef.current || defaultModelId || currentModelId,
             selectedVisibilityType: visibility,
+            selectedLocale: locale,
             ...request.body,
           },
         };
@@ -296,6 +302,8 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
       votes,
       currentModelId,
       setCurrentModelId,
+      locale,
+      setLocale,
       showCreditCardAlert,
       setShowCreditCardAlert,
     }),
@@ -316,6 +324,8 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
       votes,
       currentModelId,
       setCurrentModelId,
+      locale,
+      setLocale,
       showCreditCardAlert,
     ]
   );

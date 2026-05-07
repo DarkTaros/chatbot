@@ -1,5 +1,6 @@
 import type { Geo } from "@vercel/functions";
 import type { ArtifactKind } from "@/components/chat/artifact";
+import { getLocalePreferencePrompt, type Locale } from "@/lib/i18n";
 
 export const artifactsPrompt = `
 Artifacts is a side panel that displays content alongside the conversation. It supports scripts (code), documents (text), and spreadsheets. Changes appear in real-time.
@@ -64,19 +65,22 @@ About the origin of user's request:
 `;
 
 export const systemPrompt = ({
+  locale,
   requestHints,
   supportsTools,
 }: {
+  locale: Locale;
   requestHints: RequestHints;
   supportsTools: boolean;
 }) => {
   const requestPrompt = getRequestPromptFromHints(requestHints);
+  const localePrompt = getLocalePreferencePrompt(locale);
 
   if (!supportsTools) {
-    return `${regularPrompt}\n\n${requestPrompt}`;
+    return `${regularPrompt}\n\n${localePrompt}\n\n${requestPrompt}`;
   }
 
-  return `${regularPrompt}\n\n${requestPrompt}\n\n${artifactsPrompt}`;
+  return `${regularPrompt}\n\n${localePrompt}\n\n${requestPrompt}\n\n${artifactsPrompt}`;
 };
 
 export const codePrompt = `
