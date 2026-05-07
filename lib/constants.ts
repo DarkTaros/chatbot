@@ -8,6 +8,25 @@ export const isTestEnvironment = Boolean(
     process.env.CI_PLAYWRIGHT
 );
 
+export function shouldUseSecureAuthCookie(request: Request) {
+  const forwardedProto = request.headers
+    .get("x-forwarded-proto")
+    ?.split(",")[0]
+    ?.trim();
+  const protocol =
+    forwardedProto ?? new URL(request.url).protocol.replace(":", "");
+
+  if (protocol === "https") {
+    return true;
+  }
+
+  if (protocol === "http") {
+    return false;
+  }
+
+  return !isDevelopmentEnvironment;
+}
+
 export const guestRegex = /^guest-\d+$/;
 
 export const DUMMY_PASSWORD = generateDummyPassword();
