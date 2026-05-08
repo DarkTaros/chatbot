@@ -2,29 +2,27 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { useActionState, useEffect, useState } from "react";
+import { signIn, useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
+import { ZodError } from "zod";
 
 import { AuthForm } from "@/components/chat/auth-form";
 import { SubmitButton } from "@/components/chat/submit-button";
 import { toast } from "@/components/chat/toast";
 import { useLocale } from "@/hooks/use-locale";
-import { type LoginActionState, login } from "../actions";
+import { authFormSchema, type LoginActionState } from "../auth-form";
 
 export default function Page() {
   const router = useRouter();
   const { t } = useLocale();
   const [email, setEmail] = useState("");
+  const [isPending, setIsPending] = useState(false);
   const [isSuccessful, setIsSuccessful] = useState(false);
-
-  const [state, formAction] = useActionState<LoginActionState, FormData>(
-    login,
-    { status: "idle" }
-  );
+  const [state, setState] = useState<LoginActionState>({ status: "idle" });
 
   const { update: updateSession } = useSession();
+  const homePath = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/`;
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: router and updateSession are stable refs
   useEffect(() => {
     if (state.status === "failed") {
       toast({ type: "error", description: t.auth.invalidCredentials });
@@ -36,13 +34,53 @@ export default function Page() {
     } else if (state.status === "success") {
       setIsSuccessful(true);
       updateSession();
+      router.push(homePath);
       router.refresh();
     }
-  }, [state.status, t.auth.invalidCredentials, t.auth.invalidSubmission]);
+  }, [
+    homePath,
+    router,
+    state.status,
+    t.auth.invalidCredentials,
+    t.auth.invalidSubmission,
+    updateSession,
+  ]);
 
-  const handleSubmit = (formData: FormData) => {
-    setEmail(formData.get("email") as string);
-    formAction(formData);
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (isPending || isSuccessful) {
+      return;
+    }
+
+    const formData = new FormData(event.currentTarget);
+    const nextEmail = String(formData.get("email") ?? "");
+
+    setEmail(nextEmail);
+    setIsPending(true);
+
+    try {
+      const validatedData = authFormSchema.parse({
+        email: nextEmail,
+        password: formData.get("password"),
+      });
+
+      const result = await signIn("credentials", {
+        email: validatedData.email,
+        password: validatedData.password,
+        redirect: false,
+      });
+
+      setState({
+        status: result?.error ? "failed" : "success",
+      });
+    } catch (error) {
+      setState({
+        status: error instanceof ZodError ? "invalid_data" : "failed",
+      });
+    } finally {
+      setIsPending(false);
+    }
   };
 
   return (
@@ -51,8 +89,10 @@ export default function Page() {
         {t.auth.loginTitle}
       </h1>
       <p className="text-sm text-muted-foreground">{t.auth.loginSubtitle}</p>
-      <AuthForm action={handleSubmit} defaultEmail={email}>
-        <SubmitButton isSuccessful={isSuccessful}>{t.auth.signIn}</SubmitButton>
+      <AuthForm defaultEmail={email} onSubmit={handleSubmit}>
+        <SubmitButton isSuccessful={isSuccessful} pending={isPending}>
+          {t.auth.signIn}
+        </SubmitButton>
         <p className="text-center text-[13px] text-muted-foreground">
           {t.auth.noAccount}{" "}
           <Link

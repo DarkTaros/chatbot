@@ -10,30 +10,33 @@ import { Button } from "../ui/button";
 export function SubmitButton({
   children,
   isSuccessful,
+  pending,
 }: {
   children: React.ReactNode;
   isSuccessful: boolean;
+  pending?: boolean;
 }) {
-  const { pending } = useFormStatus();
+  const formStatus = useFormStatus();
   const { t } = useLocale();
+  const isPending = pending ?? formStatus.pending;
 
   return (
     <Button
-      aria-disabled={pending || isSuccessful}
+      aria-disabled={isPending || isSuccessful}
       className="relative"
-      disabled={pending || isSuccessful}
-      type={pending ? "button" : "submit"}
+      disabled={isPending || isSuccessful}
+      type={isPending ? "button" : "submit"}
     >
       {children}
 
-      {(pending || isSuccessful) && (
+      {(isPending || isSuccessful) && (
         <span className="absolute right-4 animate-spin">
           <LoaderIcon />
         </span>
       )}
 
       <output aria-live="polite" className="sr-only">
-        {pending || isSuccessful ? t.auth.loading : t.auth.submitForm}
+        {isPending || isSuccessful ? t.auth.loading : t.auth.submitForm}
       </output>
     </Button>
   );
