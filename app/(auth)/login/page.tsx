@@ -1,50 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { signIn, useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ZodError } from "zod";
 
 import { AuthForm } from "@/components/chat/auth-form";
 import { SubmitButton } from "@/components/chat/submit-button";
 import { toast } from "@/components/chat/toast";
 import { useLocale } from "@/hooks/use-locale";
-import { authFormSchema, type LoginActionState } from "../auth-form";
+import { authFormSchema } from "../auth-form";
 
 export default function Page() {
-  const router = useRouter();
   const { t } = useLocale();
   const [email, setEmail] = useState("");
   const [isPending, setIsPending] = useState(false);
   const [isSuccessful, setIsSuccessful] = useState(false);
-  const [state, setState] = useState<LoginActionState>({ status: "idle" });
 
   const { update: updateSession } = useSession();
   const homePath = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/`;
-
-  useEffect(() => {
-    if (state.status === "failed") {
-      toast({ type: "error", description: t.auth.invalidCredentials });
-    } else if (state.status === "invalid_data") {
-      toast({
-        type: "error",
-        description: t.auth.invalidSubmission,
-      });
-    } else if (state.status === "success") {
-      setIsSuccessful(true);
-      updateSession();
-      router.push(homePath);
-      router.refresh();
-    }
-  }, [
-    homePath,
-    router,
-    state.status,
-    t.auth.invalidCredentials,
-    t.auth.invalidSubmission,
-    updateSession,
-  ]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -71,12 +45,21 @@ export default function Page() {
         redirect: false,
       });
 
-      setState({
-        status: result?.error ? "failed" : "success",
-      });
+      if (result?.error) {
+        toast({ type: "error", description: t.auth.invalidCredentials });
+        return;
+      }
+
+      setIsSuccessful(true);
+      await updateSession();
+      window.location.assign(homePath);
     } catch (error) {
-      setState({
-        status: error instanceof ZodError ? "invalid_data" : "failed",
+      toast({
+        type: "error",
+        description:
+          error instanceof ZodError
+            ? t.auth.invalidSubmission
+            : t.auth.invalidCredentials,
       });
     } finally {
       setIsPending(false);
