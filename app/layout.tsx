@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { SessionProvider } from "next-auth/react";
+import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { LocaleProvider } from "@/hooks/use-locale";
@@ -79,7 +80,17 @@ export default function RootLayout({
             <SessionProvider
               basePath={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/auth`}
             >
-              <TooltipProvider>{children}</TooltipProvider>
+              <TooltipProvider>
+                <Toaster
+                  position="top-center"
+                  theme="system"
+                  toastOptions={{
+                    className:
+                      "!bg-card !text-foreground !border-border/50 !shadow-[var(--shadow-float)]",
+                  }}
+                />
+                {children}
+              </TooltipProvider>
             </SessionProvider>
           </ThemeProvider>
         </LocaleProvider>

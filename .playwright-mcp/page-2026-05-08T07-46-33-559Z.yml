@@ -1,0 +1,31 @@
+- generic [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - link "返回" [ref=e5] [cursor=pointer]:
+        - /url: /
+        - img [ref=e6]
+        - text: 返回
+      - button "选择语言" [ref=e8]:
+        - img
+        - generic [ref=e9]: 中文
+    - generic [ref=e11]:
+      - img [ref=e13]
+      - heading "创建账号" [level=1] [ref=e17]
+      - paragraph [ref=e18]: 免费开始使用
+      - generic [ref=e19]:
+        - generic [ref=e20]:
+          - generic [ref=e21]: 邮箱
+          - textbox "邮箱" [active] [ref=e22]:
+            - /placeholder: you@someo.ne
+        - generic [ref=e23]:
+          - generic [ref=e24]: 密码
+          - textbox "密码" [ref=e25]:
+            - /placeholder: ••••••••
+        - button "注册" [ref=e26]:
+          - text: 注册
+          - status [ref=e27]: 提交表单
+        - paragraph [ref=e28]:
+          - text: 已有账号？
+          - link "登录" [ref=e29] [cursor=pointer]:
+            - /url: /login
+  - alert [ref=e30]

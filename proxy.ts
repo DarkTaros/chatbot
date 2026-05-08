@@ -2,6 +2,8 @@ import { type NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { guestRegex, shouldUseSecureAuthCookie } from "./lib/constants";
 
+const publicAuthPaths = new Set(["/login", "/register"]);
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -20,6 +22,17 @@ export async function proxy(request: NextRequest) {
   });
 
   const base = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+  const isPublicAuthPath = publicAuthPaths.has(pathname);
+
+  if (isPublicAuthPath) {
+    const isGuest = guestRegex.test(token?.email ?? "");
+
+    if (token && !isGuest) {
+      return NextResponse.redirect(new URL(`${base}/`, request.url));
+    }
+
+    return NextResponse.next();
+  }
 
   if (!token) {
     const redirectUrl = encodeURIComponent(new URL(request.url).pathname);
@@ -27,12 +40,6 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(
       new URL(`${base}/api/auth/guest?redirectUrl=${redirectUrl}`, request.url)
     );
-  }
-
-  const isGuest = guestRegex.test(token?.email ?? "");
-
-  if (token && !isGuest && ["/login", "/register"].includes(pathname)) {
-    return NextResponse.redirect(new URL(`${base}/`, request.url));
   }
 
   return NextResponse.next();
