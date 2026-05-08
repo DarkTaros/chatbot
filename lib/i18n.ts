@@ -105,6 +105,7 @@ export const chatTranslations = {
       checkingAuth: "正在检查登录状态，请稍后再试！",
       login: "登录账号",
       signOut: "退出登录",
+      signOutFailed: "退出登录失败，请重试！",
     },
     greeting: {
       title: "有什么可以帮你？",
@@ -334,6 +335,7 @@ export const chatTranslations = {
       checkingAuth: "Checking authentication status, please try again!",
       login: "Login to your account",
       signOut: "Sign out",
+      signOutFailed: "Failed to sign out, please try again!",
     },
     greeting: {
       title: "What can I help with?",

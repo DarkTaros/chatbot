@@ -50,6 +50,15 @@ model_list:
       endpoint_name: litellm-endpoint
       description: Latest Moonshot Kimi chat model
 
+  - model_name: gpt-5.4
+    model_info:
+      name: GPT-5.4
+      icon_url: https://s3.ah-api.com/logos/openai.svg
+      visible_in_web: true
+      mode: Chat
+      endpoint_name: litellm-endpoint
+      description: Standard OpenAI chat model
+
   - model_name: gpt-5.4-mini
     model_info:
       name: GPT-5.4 Mini

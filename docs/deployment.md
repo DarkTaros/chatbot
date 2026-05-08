@@ -179,6 +179,12 @@ openssl rand -base64 32
 
 ```bash
 AUTH_SECRET=replace-with-generated-secret
+AUTH_URL=https://chat.ah-api.com
+NEXTAUTH_URL=https://chat.ah-api.com
+# 如果应用对外域名在 CDN / 反向代理之后，且容器内回环访问更稳定，可额外设置：
+# NEXTAUTH_URL_INTERNAL=http://127.0.0.1:3000
+# 非默认来源时，可按需增加允许的 Server Actions 来源（host[:port]，逗号分隔）：
+# SERVER_ACTIONS_ALLOWED_ORIGINS=chat.ah-api.com
 
 LITELLM_BASE_URL=http://localhost:4000/v1
 LITELLM_API_KEY=replace-with-your-litellm-api-key
@@ -197,6 +203,21 @@ RUSTFS_S3_PUBLIC_READ_POLICY=true
 
 POSTGRES_URL=postgres://chatbot:change-this-postgres-password@127.0.0.1:5432/chatbot
 REDIS_URL=redis://:change-this-redis-password@127.0.0.1:6379
+```
+
+认证相关说明：
+
+- `AUTH_URL` 和 `NEXTAUTH_URL` 必须填写浏览器最终访问到的公网地址，而不是容器内地址、内网地址或 `localhost`。
+- 如果这两个变量在生产环境误配成 `http://localhost:3000`，登录/退出登录等重定向就会跳回服务器本机地址。
+- 如果你的站点经过 Nginx、Caddy、Traefik 或云负载均衡反代，还要确保把原始 Host 和协议头转发给 Next.js。
+
+以 Nginx 为例，至少要带上这些头：
+
+```nginx
+proxy_set_header Host $host;
+proxy_set_header X-Forwarded-Host $host;
+proxy_set_header X-Forwarded-Proto $scheme;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
 ```
 
 ## 6. 启动应用

@@ -1,5 +1,6 @@
 import { withBotId } from "botid/next/config";
 import type { NextConfig } from "next";
+import { getServerActionAllowedOrigins } from "./lib/site-url";
 
 const basePath = process.env.IS_DEMO === "1" ? "/demo" : "";
 
@@ -10,6 +11,7 @@ const remotePatterns: NonNullable<NextConfig["images"]>["remotePatterns"] = [
 ];
 
 const rustFsPublicBaseUrl = process.env.RUSTFS_PUBLIC_BASE_URL?.trim();
+const serverActionAllowedOrigins = getServerActionAllowedOrigins();
 
 if (rustFsPublicBaseUrl) {
   const url = new URL(rustFsPublicBaseUrl);
@@ -43,7 +45,7 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_BASE_PATH: basePath,
   },
   cacheComponents: true,
-  allowedDevOrigins: ["127.0.0.1"],
+  allowedDevOrigins: ["127.0.0.1", "localhost"],
   devIndicators: false,
   poweredByHeader: false,
   reactCompiler: true,
@@ -58,7 +60,7 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     serverActions: {
-      allowedOrigins: ["chat.ah-api.com"],
+      allowedOrigins: serverActionAllowedOrigins,
     },
     prefetchInlining: true,
     cachedNavigations: true,

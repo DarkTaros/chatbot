@@ -5,11 +5,12 @@ import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { LocaleProvider } from "@/hooks/use-locale";
+import { getSiteMetadataBase } from "@/lib/site-url";
 
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://chat.vercel.ai"),
+  metadataBase: getSiteMetadataBase(),
   title: "诶嘿Chat | AhChat",
   description: "诶嘿Chat (AhChat) AI chat application.",
 };

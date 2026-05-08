@@ -9,7 +9,9 @@ test.describe("Authentication Pages", () => {
     await expect(
       page.getByRole("button", { name: /^(Sign In|登录)$/ })
     ).toBeVisible();
-    await expect(page.getByRole("link", { name: /^(Sign up|注册)$/ })).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: /^(Sign up|注册)$/ })
+    ).toBeVisible();
   });
 
   test("register page renders correctly", async ({ page }) => {
@@ -19,7 +21,9 @@ test.describe("Authentication Pages", () => {
     await expect(
       page.getByRole("button", { name: /^(Sign Up|注册)$/ })
     ).toBeVisible();
-    await expect(page.getByRole("link", { name: /^(Sign in|登录)$/ })).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: /^(Sign in|登录)$/ })
+    ).toBeVisible();
   });
 
   test("register form submission does not fall into the error boundary", async ({
@@ -69,5 +73,28 @@ test.describe("Authentication Pages", () => {
     await page.goto("/register");
     await page.getByRole("link", { name: /^(Sign in|登录)$/ }).click();
     await expect(page).toHaveURL("/login");
+  });
+
+  test("sign out keeps the user on the current origin", async ({
+    baseURL,
+    page,
+  }) => {
+    const user = generateRandomTestUser();
+
+    await page.goto("/register");
+    await page.locator('input[name="email"]').fill(user.email);
+    await page.locator('input[name="password"]').fill(user.password);
+    await page.getByRole("button", { name: /^(Sign Up|注册)$/ }).click();
+
+    await expect(page).toHaveURL("/");
+
+    await page.getByTestId("user-nav-button").click();
+    await page.getByRole("button", { name: /^(Sign out|退出登录)$/ }).click();
+
+    await expect(page).toHaveURL("/");
+
+    expect(new URL(page.url()).origin).toBe(
+      new URL(baseURL ?? page.url()).origin
+    );
   });
 });

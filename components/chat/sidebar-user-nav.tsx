@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { User } from "next-auth";
 import { signOut, useSession } from "next-auth/react";
 import { useTheme } from "next-themes";
+import { useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,8 +36,10 @@ export function SidebarUserNav({ user }: { user: User }) {
   const { data, status } = useSession();
   const { setTheme, resolvedTheme } = useTheme();
   const { t } = useLocale();
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   const isGuest = guestRegex.test(data?.user?.email ?? "");
+  const homePath = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/`;
 
   return (
     <SidebarMenu>
@@ -93,7 +96,7 @@ export function SidebarUserNav({ user }: { user: User }) {
             <DropdownMenuItem asChild data-testid="user-nav-item-auth">
               <button
                 className="w-full cursor-pointer text-[13px]"
-                onClick={() => {
+                onClick={async () => {
                   if (status === "loading") {
                     toast({
                       type: "error",
@@ -106,9 +109,25 @@ export function SidebarUserNav({ user }: { user: User }) {
                   if (isGuest) {
                     router.push("/login");
                   } else {
-                    signOut({
-                      redirectTo: "/",
-                    });
+                    if (isSigningOut) {
+                      return;
+                    }
+
+                    setIsSigningOut(true);
+
+                    try {
+                      await signOut({
+                        redirect: false,
+                        redirectTo: homePath,
+                      });
+                      window.location.assign(homePath);
+                    } catch {
+                      setIsSigningOut(false);
+                      toast({
+                        type: "error",
+                        description: t.sidebar.signOutFailed,
+                      });
+                    }
                   }
                 }}
                 type="button"

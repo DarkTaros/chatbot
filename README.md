@@ -82,6 +82,24 @@ Set these variables in `.env.local`:
 
 `RUSTFS_PUBLIC_BASE_URL` should point to a browser-reachable path-style RustFS endpoint. With the included Docker setup, that value is `http://127.0.0.1:9000`.
 
+## Authentication URL
+
+Auth.js and Next.js Server Actions need to know the public site origin for redirects and CSRF-safe form submissions.
+
+Set these variables in `.env.local`:
+
+- `AUTH_URL`: public origin used by Auth.js on the server
+- `NEXTAUTH_URL`: public origin used by `next-auth/react` and Auth.js compatibility helpers
+- Optional `NEXTAUTH_URL_INTERNAL`: internal origin for server-to-server calls when the public site sits behind a reverse proxy or CDN
+- Optional `SERVER_ACTIONS_ALLOWED_ORIGINS`: comma-separated `host[:port]` allowlist for non-default local or production origins
+
+Examples:
+
+- Local development: `AUTH_URL=http://localhost:3000` and `NEXTAUTH_URL=http://localhost:3000`
+- Production: `AUTH_URL=https://chat.ah-api.com` and `NEXTAUTH_URL=https://chat.ah-api.com`
+
+If these values are missing or point to an internal address such as `http://localhost:3000`, sign-in/sign-out redirects can jump to the wrong host.
+
 ## Deploy Your Own
 
 You can deploy your own version of AhChat to Vercel with one click:
@@ -110,6 +128,13 @@ pnpm storage:init
 pnpm install
 pnpm db:migrate # Setup database or apply latest database changes
 pnpm dev
+```
+
+Make sure `.env.local` also contains:
+
+```bash
+AUTH_URL=http://localhost:3000
+NEXTAUTH_URL=http://localhost:3000
 ```
 
 Your app template should now be running on [localhost:3000](http://localhost:3000).
