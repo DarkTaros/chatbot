@@ -12,8 +12,20 @@ import {
   type ModelCapabilities,
 } from "./models";
 
+type EndpointApiType = "openai-compatible";
+
+type ConfiguredEndpoint = {
+  apiKey: string | null;
+  apiType: EndpointApiType;
+  apiKeyEnv: string | null;
+  baseURL: string | null;
+  baseURLEnv: string | null;
+  name: string;
+};
+
 type ConfiguredModel = ChatModel & {
   capabilities: ModelCapabilities;
+  endpointName: string | null;
 };
 
 const modelCapabilitiesSchema = z
@@ -24,7 +36,17 @@ const modelCapabilitiesSchema = z
   })
   .partial();
 
+const endpointConfigSchema = z.object({
+  endpoint_name: z.string().trim().min(1),
+  api_type: z.literal("openai-compatible").optional(),
+  api_key: z.string().trim().min(1).optional(),
+  api_key_env: z.string().trim().min(1).optional(),
+  base_url: z.string().trim().min(1).optional(),
+  base_url_env: z.string().trim().min(1).optional(),
+});
+
 const modelsConfigSchema = z.object({
+  endpoint_list: z.array(endpointConfigSchema).optional(),
   model_list: z
     .array(
       z
@@ -39,6 +61,7 @@ const modelsConfigSchema = z.object({
               mode: z.string().trim().min(1),
               provider: z.string().trim().min(1).optional(),
               description: z.string().trim().optional(),
+              endpoint_name: z.string().trim().min(1).optional(),
               capabilities: modelCapabilitiesSchema.optional(),
             })
             .passthrough(),
@@ -50,6 +73,17 @@ const modelsConfigSchema = z.object({
 
 function inferProvider(modelId: string) {
   return modelId.includes("/") ? modelId.split("/")[0] : "openai";
+}
+
+function normalizeDefaultEndpoint(): ConfiguredEndpoint {
+  return {
+    apiKey: null,
+    apiType: "openai-compatible",
+    apiKeyEnv: "LITELLM_API_KEY",
+    baseURL: null,
+    baseURLEnv: "LITELLM_BASE_URL",
+    name: "default",
+  };
 }
 
 function parseModelCapabilities() {
@@ -98,7 +132,7 @@ function mergeCapabilities(
   };
 }
 
-async function readConfiguredModels(): Promise<ConfiguredModel[]> {
+async function readModelsConfig() {
   const modelsFilePath = path.join(process.cwd(), "models.yaml");
   let rawContent: string;
 
@@ -143,10 +177,22 @@ async function readConfiguredModels(): Promise<ConfiguredModel[]> {
     );
   }
 
+  return parsedConfig.data;
+}
+
+async function readConfiguredModels(): Promise<ConfiguredModel[]> {
+  const parsedConfig = await readModelsConfig();
+
   const capabilityOverrides = parseModelCapabilities();
   const seenModelIds = new Set<string>();
+  const endpointNames = new Set([
+    "default",
+    ...(parsedConfig.endpoint_list ?? []).map(
+      (endpoint) => endpoint.endpoint_name
+    ),
+  ]);
 
-  return parsedConfig.data.model_list.map((entry) => {
+  return parsedConfig.model_list.map((entry) => {
     const modelId = entry.model_name;
 
     if (seenModelIds.has(modelId)) {
@@ -158,6 +204,16 @@ async function readConfiguredModels(): Promise<ConfiguredModel[]> {
 
     seenModelIds.add(modelId);
 
+    if (
+      entry.model_info.endpoint_name &&
+      !endpointNames.has(entry.model_info.endpoint_name)
+    ) {
+      throw new ChatbotError(
+        "bad_request:provider",
+        `Unknown endpoint_name in models.yaml for ${modelId}: ${entry.model_info.endpoint_name}`
+      );
+    }
+
     return {
       id: modelId,
       name: entry.model_info.name,
@@ -168,6 +224,7 @@ async function readConfiguredModels(): Promise<ConfiguredModel[]> {
       iconUrl: entry.model_info.icon_url,
       visibleInWeb: entry.model_info.visible_in_web,
       mode: entry.model_info.mode,
+      endpointName: entry.model_info.endpoint_name ?? null,
       capabilities: mergeCapabilities(
         entry.model_info.capabilities,
         capabilityOverrides[modelId]
@@ -176,8 +233,60 @@ async function readConfiguredModels(): Promise<ConfiguredModel[]> {
   });
 }
 
+async function readConfiguredEndpoints(): Promise<
+  Map<string, ConfiguredEndpoint>
+> {
+  const parsedConfig = await readModelsConfig();
+  const endpoints = new Map<string, ConfiguredEndpoint>();
+  endpoints.set("default", normalizeDefaultEndpoint());
+
+  for (const endpoint of parsedConfig.endpoint_list ?? []) {
+    if (endpoints.has(endpoint.endpoint_name)) {
+      throw new ChatbotError(
+        "bad_request:provider",
+        `Duplicate endpoint_name in models.yaml: ${endpoint.endpoint_name}`
+      );
+    }
+
+    endpoints.set(endpoint.endpoint_name, {
+      apiKey: endpoint.api_key ?? null,
+      apiType: endpoint.api_type ?? "openai-compatible",
+      apiKeyEnv: endpoint.api_key_env ?? null,
+      baseURL: endpoint.base_url ?? null,
+      baseURLEnv: endpoint.base_url_env ?? null,
+      name: endpoint.endpoint_name,
+    });
+  }
+
+  return endpoints;
+}
+
 export function getConfiguredModels() {
   return readConfiguredModels();
+}
+
+export async function getModelEndpointConfig(modelId: string) {
+  const models = await getConfiguredModels();
+  const model = models.find((candidate) => candidate.id === modelId);
+
+  if (!model) {
+    throw new ChatbotError(
+      "bad_request:provider",
+      `Model is not defined in models.yaml: ${modelId}`
+    );
+  }
+
+  const endpoints = await readConfiguredEndpoints();
+  const endpoint = endpoints.get(model.endpointName ?? "default");
+
+  if (!endpoint) {
+    throw new ChatbotError(
+      "bad_request:provider",
+      `Endpoint is not defined in models.yaml: ${model.endpointName}`
+    );
+  }
+
+  return endpoint;
 }
 
 export async function getActiveModels(): Promise<ChatModel[]> {

@@ -1,3 +1,9 @@
+endpoint_list:
+  - endpoint_name: litellm-endpoint
+    api_type: openai-compatible
+    base_url: https://litellm.ah-api.com/v1
+    api_key: sk-8_NSOM42alaP9ZoqY_TCgA
+
 model_list:
   - model_name: volcengine/doubao-seed-2-0-mini-260215
     model_info:
@@ -5,6 +11,7 @@ model_list:
       icon_url: https://s3.ah-api.com/logos/doubao.svg
       visible_in_web: true
       mode: Chat
+      endpoint_name: litellm-endpoint
       description: Lightweight Doubao chat model for fast responses
 
   - model_name: volcengine/doubao-seed-2-0-lite-260215
@@ -13,6 +20,7 @@ model_list:
       icon_url: https://s3.ah-api.com/logos/doubao.svg
       visible_in_web: true
       mode: Chat
+      endpoint_name: litellm-endpoint
       description: Balanced Doubao chat model for everyday usage
 
   - model_name: volcengine/doubao-seed-2-0-pro-260215
@@ -21,6 +29,7 @@ model_list:
       icon_url: https://s3.ah-api.com/logos/doubao.svg
       visible_in_web: true
       mode: Chat
+      endpoint_name: litellm-endpoint
       description: Higher-capability Doubao chat model
 
   - model_name: moonshot/kimi-k2.5
@@ -29,6 +38,7 @@ model_list:
       icon_url: https://s3.ah-api.com/logos/moonshot.svg
       visible_in_web: true
       mode: Chat
+      endpoint_name: litellm-endpoint
       description: Moonshot Kimi chat model
 
   - model_name: moonshot/kimi-k2.6
@@ -37,6 +47,7 @@ model_list:
       icon_url: https://s3.ah-api.com/logos/moonshot.svg
       visible_in_web: true
       mode: Chat
+      endpoint_name: litellm-endpoint
       description: Latest Moonshot Kimi chat model
 
   - model_name: gpt-5.4-mini
@@ -45,6 +56,7 @@ model_list:
       icon_url: https://s3.ah-api.com/logos/openai.svg
       visible_in_web: true
       mode: Chat
+      endpoint_name: litellm-endpoint
       description: Compact OpenAI chat model
 
   - model_name: gpt-5.4-nano
@@ -53,6 +65,7 @@ model_list:
       icon_url: https://s3.ah-api.com/logos/openai.svg
       visible_in_web: true
       mode: Chat
+      endpoint_name: litellm-endpoint
       description: Smallest OpenAI chat model in this list
 
   - model_name: gpt-5-pro
@@ -61,7 +74,18 @@ model_list:
       icon_url: https://s3.ah-api.com/logos/openai.svg
       visible_in_web: true
       mode: Chat
+      endpoint_name: litellm-endpoint
       description: Higher-end OpenAI chat model
+
+  # - model_name: gemini-3.1-flash-lite-preview
+  #   model_info:
+  #     name: Gemini 3.1 Flash Lite Preview
+  #     provider: google
+  #     icon_url: https://s3.ah-api.com/logos/gemini.svg
+  #     visible_in_web: true
+  #     mode: Chat
+  #     endpoint_name: gemini
+  #     description: Lightweight Gemini preview chat model
 
   - model_name: volcengine/doubao-seedream-5-0-260128
     model_info:
@@ -69,6 +93,7 @@ model_list:
       icon_url: https://s3.ah-api.com/logos/doubao.svg
       visible_in_web: false
       mode: Image Generation
+      endpoint_name: litellm-endpoint
       description: Volcengine image generation model
 
   - model_name: openai/gpt-image-1.5
@@ -77,4 +102,5 @@ model_list:
       icon_url: https://s3.ah-api.com/logos/openai.svg
       visible_in_web: false
       mode: Image Generation
+      endpoint_name: litellm-endpoint
       description: OpenAI image generation model

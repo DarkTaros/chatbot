@@ -48,8 +48,18 @@ The app reads available models from the project-root `models.yaml` file instead 
 - `icon_url`: model icon URL
 - `visible_in_web`: whether the model is visible in the web app
 - `mode`: model category such as `Chat`, `Completion`, `Embedding`, `Audio Speech`, `Audio Transcription`, `Image Generation`, or `Video Generation`
+- Optional `endpoint_name`: reference to an item in `endpoint_list`
+
+You can also define `endpoint_list` at the top of `models.yaml` to route different models to different OpenAI-compatible gateways. Each endpoint currently supports:
+
+- `endpoint_name`: unique endpoint identifier
+- `api_type`: currently `openai-compatible`
+- `base_url` or `base_url_env`: explicit base URL or an env var name containing it
+- `api_key` or `api_key_env`: explicit API key or an env var name containing it
 
 Only models marked `visible_in_web: true` and with mode `Chat` or `Completion` are shown in the chat model selector. `LITELLM_DEFAULT_MODEL` must point to one of those visible chat models. `LITELLM_TITLE_MODEL` can point to any model defined in `models.yaml`.
+
+If a model does not specify `endpoint_name`, the app falls back to the default OpenAI-compatible endpoint using `LITELLM_BASE_URL` and `LITELLM_API_KEY`.
 
 If your LiteLLM models have per-model capability differences, define them under `model_info.capabilities` in `models.yaml`. You can still use `LITELLM_MODEL_CAPABILITIES` as an optional JSON override keyed by model ID. Tool execution is disabled in the LiteLLM Responses API integration, so `tools` defaults to `false`.
 
