@@ -2,7 +2,7 @@ import {
   getActiveModels,
   getCapabilities,
   getDefaultChatModel,
-} from "@/lib/ai/models";
+} from "@/lib/ai/models.server";
 
 export async function GET() {
   const models = await getActiveModels();

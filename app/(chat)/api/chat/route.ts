@@ -8,7 +8,7 @@ import {
   collectLiteLLMResponseStream,
   convertToLiteLLMResponseInput,
 } from "@/lib/ai/litellm-responses";
-import { resolveChatModelId } from "@/lib/ai/models";
+import { resolveChatModelId } from "@/lib/ai/models.server";
 import { type RequestHints, systemPrompt } from "@/lib/ai/prompts";
 import {
   deleteChatById,

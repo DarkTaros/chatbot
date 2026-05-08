@@ -18,8 +18,11 @@ async function mockModels(page: Page) {
           {
             description: "Test model",
             id: "test/model",
+            iconUrl: "https://example.com/test-model.svg",
+            mode: "Chat",
             name: "Test Model",
             provider: "test",
+            visibleInWeb: true,
           },
         ],
       }),

@@ -68,6 +68,7 @@ function setCookie(name: string, value: string) {
 }
 
 type ModelProviderGroup = {
+  iconUrl: string | null;
   name: string;
   provider: string;
   models: ChatModel[];
@@ -120,11 +121,15 @@ function buildProviderGroups(models: ChatModel[]): ModelProviderGroup[] {
     const group = groups.get(provider);
 
     if (group) {
+      if (!(group.iconUrl || !model.iconUrl)) {
+        group.iconUrl = model.iconUrl;
+      }
       group.models.push(model);
       continue;
     }
 
     groups.set(provider, {
+      iconUrl: model.iconUrl,
       name: formatProviderName(provider),
       provider,
       models: [model],
@@ -808,7 +813,10 @@ function PureModelSelectorCompact({
           variant="ghost"
         >
           {selectedProvider && (
-            <ModelSelectorLogo provider={selectedProvider} />
+            <ModelSelectorLogo
+              iconUrl={selectedModel?.iconUrl}
+              provider={selectedProvider}
+            />
           )}
           <ModelSelectorName>
             {selectedModel?.name ?? selectedModelId ?? t.input.loading}
@@ -841,7 +849,10 @@ function PureModelSelectorCompact({
                     onSelect={() => setActiveProvider(group.provider)}
                     value={`provider:${group.provider}`}
                   >
-                    <ModelSelectorLogo provider={group.provider} />
+                    <ModelSelectorLogo
+                      iconUrl={group.iconUrl}
+                      provider={group.provider}
+                    />
                     <ModelSelectorName>{group.name}</ModelSelectorName>
                     <span className="ml-auto text-[11px] text-muted-foreground">
                       {group.models.length}
@@ -874,7 +885,10 @@ function PureModelSelectorCompact({
                       }}
                       value={`model:${model.id}`}
                     >
-                      <ModelSelectorLogo provider={logoProvider} />
+                      <ModelSelectorLogo
+                        iconUrl={model.iconUrl}
+                        provider={logoProvider}
+                      />
                       <ModelSelectorName>{model.name}</ModelSelectorName>
                       <div className="ml-auto flex items-center gap-2 text-foreground/70">
                         {capabilities?.[model.id]?.tools && (

@@ -2,23 +2,10 @@ import "server-only";
 
 import OpenAI from "openai";
 import type { ResponseInput } from "openai/resources/responses/responses";
-import { z } from "zod";
 import { ChatbotError } from "@/lib/errors";
 
 let client: OpenAI | null = null;
 let clientConfigKey: string | null = null;
-
-const liteLLMModelsResponseSchema = z.object({
-  object: z.string().optional(),
-  data: z.array(
-    z.object({
-      id: z.string().min(1),
-      object: z.string().optional(),
-      created: z.number().optional(),
-      owned_by: z.string().optional(),
-    })
-  ),
-});
 
 function readRequiredEnv(name: string) {
   const value = process.env[name]?.trim();
@@ -50,40 +37,6 @@ export function getLiteLLMClient() {
   }
 
   return client;
-}
-
-export async function getLiteLLMModels({
-  signal,
-}: {
-  signal?: AbortSignal;
-} = {}) {
-  const baseURL = readRequiredEnv("LITELLM_BASE_URL").replace(/\/+$/, "");
-  const apiKey = readRequiredEnv("LITELLM_API_KEY");
-  const response = await fetch(`${baseURL}/models`, {
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-    },
-    signal,
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text().catch(() => "");
-    throw new ChatbotError(
-      "bad_request:provider",
-      `Failed to get LiteLLM models. ${errorText}`.trim()
-    );
-  }
-
-  const parsed = liteLLMModelsResponseSchema.safeParse(await response.json());
-
-  if (!parsed.success) {
-    throw new ChatbotError(
-      "bad_request:provider",
-      "Invalid LiteLLM /models response."
-    );
-  }
-
-  return parsed.data.data;
 }
 
 export function createLiteLLMResponseStream({

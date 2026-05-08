@@ -1,9 +1,54 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 
-const MODEL_BUTTON_REGEX = /Kimi|Codestral|Mistral|DeepSeek|GPT|Grok/i;
+async function mockModels(page: Page) {
+  await page.route("**/api/models", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        capabilities: {
+          "openai/gpt-4o-mini": {
+            reasoning: false,
+            tools: false,
+            vision: true,
+          },
+          "mistral/mistral-small-latest": {
+            reasoning: false,
+            tools: false,
+            vision: false,
+          },
+        },
+        defaultModel: "openai/gpt-4o-mini",
+        models: [
+          {
+            description: "Fast default chat model",
+            iconUrl: "https://models.dev/logos/openai.svg",
+            id: "openai/gpt-4o-mini",
+            mode: "Chat",
+            name: "GPT-4o Mini",
+            provider: "openai",
+            visibleInWeb: true,
+          },
+          {
+            description: "Lightweight completion-oriented model",
+            iconUrl: "https://models.dev/logos/mistral.svg",
+            id: "mistral/mistral-small-latest",
+            mode: "Completion",
+            name: "Mistral Small",
+            provider: "mistral",
+            visibleInWeb: true,
+          },
+        ],
+      }),
+    });
+  });
+}
+
+const MODEL_BUTTON_REGEX = /Mistral|GPT/i;
 
 test.describe("Model Selector", () => {
   test.beforeEach(async ({ page }) => {
+    await mockModels(page);
     await page.goto("/");
   });
 
@@ -62,7 +107,7 @@ test.describe("Model Selector", () => {
 
     await expect(page.getByText("Channels")).toBeVisible();
     await expect(page.getByText("Mistral")).toBeVisible();
-    await expect(page.getByText("Moonshot")).toBeVisible();
+    await expect(page.getByText("OpenAI")).toBeVisible();
   });
 
   test("can select a model from a provider", async ({ page }) => {

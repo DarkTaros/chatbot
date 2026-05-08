@@ -110,6 +110,7 @@ export type ModelSelectorLogoProps = Omit<
   ComponentProps<"img">,
   "src" | "alt"
 > & {
+  iconUrl?: string | null;
   provider:
     | "moonshotai-cn"
     | "lucidquery"
@@ -172,6 +173,7 @@ export type ModelSelectorLogoProps = Omit<
 };
 
 export const ModelSelectorLogo = ({
+  iconUrl,
   provider,
   className,
   ...props
@@ -179,9 +181,9 @@ export const ModelSelectorLogo = ({
   <img
     {...props}
     alt={`${provider} logo`}
-    className={cn("size-4 dark:invert", className)}
+    className={cn("size-4", !iconUrl && "dark:invert", className)}
     height={16}
-    src={`https://models.dev/logos/${provider}.svg`}
+    src={iconUrl || `https://models.dev/logos/${provider}.svg`}
     width={16}
   />
 );

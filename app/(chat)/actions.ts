@@ -6,7 +6,7 @@ import { auth } from "@/app/(auth)/auth";
 import type { VisibilityType } from "@/components/chat/visibility-selector";
 import { createLiteLLMTextResponse } from "@/lib/ai/litellm";
 import { createLiteLLMTextInput } from "@/lib/ai/litellm-responses";
-import { getTitleModelId } from "@/lib/ai/models";
+import { getTitleModelId } from "@/lib/ai/models.server";
 import { titlePrompt } from "@/lib/ai/prompts";
 import {
   deleteMessagesByChatIdAfterTimestamp,

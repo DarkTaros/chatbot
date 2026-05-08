@@ -1,0 +1,80 @@
+model_list:
+  - model_name: volcengine/doubao-seed-2-0-mini-260215
+    model_info:
+      name: Doubao Seed 2.0 Mini
+      icon_url: https://s3.ah-api.com/logos/doubao.svg
+      visible_in_web: true
+      mode: Chat
+      description: Lightweight Doubao chat model for fast responses
+
+  - model_name: volcengine/doubao-seed-2-0-lite-260215
+    model_info:
+      name: Doubao Seed 2.0 Lite
+      icon_url: https://s3.ah-api.com/logos/doubao.svg
+      visible_in_web: true
+      mode: Chat
+      description: Balanced Doubao chat model for everyday usage
+
+  - model_name: volcengine/doubao-seed-2-0-pro-260215
+    model_info:
+      name: Doubao Seed 2.0 Pro
+      icon_url: https://s3.ah-api.com/logos/doubao.svg
+      visible_in_web: true
+      mode: Chat
+      description: Higher-capability Doubao chat model
+
+  - model_name: moonshot/kimi-k2.5
+    model_info:
+      name: Kimi K2.5
+      icon_url: https://s3.ah-api.com/logos/moonshot.svg
+      visible_in_web: true
+      mode: Chat
+      description: Moonshot Kimi chat model
+
+  - model_name: moonshot/kimi-k2.6
+    model_info:
+      name: Kimi K2.6
+      icon_url: https://s3.ah-api.com/logos/moonshot.svg
+      visible_in_web: true
+      mode: Chat
+      description: Latest Moonshot Kimi chat model
+
+  - model_name: gpt-5.4-mini
+    model_info:
+      name: GPT-5.4 Mini
+      icon_url: https://s3.ah-api.com/logos/openai.svg
+      visible_in_web: true
+      mode: Chat
+      description: Compact OpenAI chat model
+
+  - model_name: gpt-5.4-nano
+    model_info:
+      name: GPT-5.4 Nano
+      icon_url: https://s3.ah-api.com/logos/openai.svg
+      visible_in_web: true
+      mode: Chat
+      description: Smallest OpenAI chat model in this list
+
+  - model_name: gpt-5-pro
+    model_info:
+      name: GPT-5 Pro
+      icon_url: https://s3.ah-api.com/logos/openai.svg
+      visible_in_web: true
+      mode: Chat
+      description: Higher-end OpenAI chat model
+
+  - model_name: volcengine/doubao-seedream-5-0-260128
+    model_info:
+      name: Doubao Seedream 5.0
+      icon_url: https://s3.ah-api.com/logos/doubao.svg
+      visible_in_web: false
+      mode: Image Generation
+      description: Volcengine image generation model
+
+  - model_name: openai/gpt-image-1.5
+    model_info:
+      name: GPT Image 1.5
+      icon_url: https://s3.ah-api.com/logos/openai.svg
+      visible_in_web: false
+      mode: Image Generation
+      description: OpenAI image generation model
